@@ -83,7 +83,7 @@ module Syntax.Expr (
                                         iNewline, pprExpr e ]
   pprExpr (Eapply e args)   = pprApplication e args
   pprExpr (Etuple es)       = iConcat [ iStr "(",  iInterleave (iStr ", ") $
-                                        map pprExpr es, iStr ")" ]
+                                        map pprAExpr es, iStr ")" ]
   pprExpr (Econs e1 e2)     = pprAExpr e1 `iAppend` iStr " :: "
                                           `iAppend` pprAExpr e2
   pprExpr (Eif e1 e2 e3)    = iConcat [ iStr "if ( ", pprExpr e1,
