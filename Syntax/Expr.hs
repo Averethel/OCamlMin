@@ -1,11 +1,4 @@
-module Syntax.Expr (
-  FunClause(..),
-  pprFunClause,
-  Expr(..),
-  isAtomicExpr,
-  pprAExpr,
-  pprExpr
-) where
+module Syntax.Expr where
   import Syntax.BinaryPrim
   import Syntax.Constant
   import Syntax.Pattern
