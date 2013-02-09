@@ -5,7 +5,7 @@ module Syntax.Pattern where
 
   data Pattern =
       Pwildcard
-    | Pval      String
+    | Pvar      String
     | Pconst    Constant
     | Ptuple    [Pattern]
     | Pcons     Pattern Pattern
@@ -13,7 +13,7 @@ module Syntax.Pattern where
 
   isAtomicPattern :: Pattern -> Bool
   isAtomicPattern Pwildcard  = True
-  isAtomicPattern (Pval _)   = True
+  isAtomicPattern (Pvar _)   = True
   isAtomicPattern (Pconst _) = True
   isAtomicPattern _          = False
 
@@ -25,7 +25,7 @@ module Syntax.Pattern where
   pprPattern :: Pattern -> Iseq
   pprPattern Pwildcard     =
     iStr "_"
-  pprPattern (Pval v)      =
+  pprPattern (Pvar v)      =
     iStr v
   pprPattern (Pconst c)    =
     pprConstant c
