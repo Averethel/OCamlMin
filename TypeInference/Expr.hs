@@ -9,6 +9,7 @@ module TypeInference.Expr (typeOfExpr) where
   import TypeInference.BinaryPrim
   import TypeInference.Constant
   import TypeInference.Constraints
+  import TypeInference.Constructor
   import TypeInference.Counter
   import TypeInference.Env
   import TypeInference.Pattern
@@ -23,9 +24,9 @@ module TypeInference.Expr (typeOfExpr) where
   typeOfFunClause env cns fc = do
     tbcns  <- mapM typeAndBindingsOfPattern $ arguments fc
     let (tas, bas, cas) = unzip3 tbcns
-    (t, s) <- typeOfExpr (concat bas ++ env) (concat cas ++ cns) $ body fc
-    s'     <- unify (concat cas ++ cns)
-    return (Tfun tas t `applySubst` s `applySubst` s', s ++ s')
+    (te, s) <- typeOfExpr (concat bas ++ env) (concat cas ++ cns) $ fbody fc
+    s'      <- unify (concat cas ++ cns)
+    return (Tfun tas te `applySubst` s `applySubst` s', s ++ s')
 
   typeOfFunction :: (MonadState Counter m, MonadError String m) =>
                     Env -> Constraints -> [FunClause] -> m (Type, Subst)
@@ -35,6 +36,26 @@ module TypeInference.Expr (typeOfExpr) where
     s <- unify $ cns ++ map ((,) t) tps
     let subst = foldl (++) s ss
     return (t `applySubst` subst, subst)
+
+  typeOfCaseClause :: (MonadState Counter m, MonadError String m) =>
+                      Env -> Constraints -> CaseClause -> m (Type, Type, Subst)
+  typeOfCaseClause env cns cc = do
+    (tp, bs) <- typeAndBindingsOfConstructor (constructor cc) $ variables cc
+    (te, s)  <- typeOfExpr (bs ++ env) cns $ cbody cc
+    s'       <- unify cns
+    return (tp `applySubst` s' `applySubst` s,
+            te `applySubst` s' `applySubst` s, s' ++ s)
+
+  typeOfCase :: (MonadState Counter m, MonadError String m) =>
+                Env -> Constraints -> [CaseClause] -> m (Type, Type, Subst)
+  typeOfCase env cns cls = do
+    tcls <- mapM (typeOfCaseClause env cns) cls
+    let (ta:tas, tr:trs, ss) = unzip3 tcls
+    s <- unify $ cns `addConstraints`
+                 map ((,) ta) tas `addConstraints`
+                 map ((,) tr) trs
+    let subst = foldl (++) s ss
+    return (ta `applySubst` subst, tr `applySubst` subst, subst)
 
 
   typeOfExpr :: (MonadState Counter m, MonadError String m) =>
@@ -99,6 +120,11 @@ module TypeInference.Expr (typeOfExpr) where
     (t2, s2) <- typeOfExpr env cns e2
     s        <- unify $ singleConstraint t1 Tunit `addConstraints` cns
     return (t2 `applySubst` s, s ++ s2)
+  typeOfExpr env cns (Ecase e1 cls)     = do
+    (t1, s1)     <- typeOfExpr env cns e1
+    (ta, tr, s2) <- typeOfCase env cns cls
+    s            <- unify $ singleConstraint ta t1 `addConstraints` cns
+    return (tr `applySubst` s `applySubst` s2 `applySubst` s1, s ++ s2 ++ s1)
   typeOfExpr env cns (Ehandle e1 e2)    = do
     (t1, _)  <- typeOfExpr env cns e1
     (t2, s2) <- typeOfExpr env cns e2
