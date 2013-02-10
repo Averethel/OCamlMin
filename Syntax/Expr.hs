@@ -4,6 +4,7 @@ module Syntax.Expr where
   import Syntax.Pattern
   import Syntax.UnaryPrim
 
+  import Utils.Errors
   import Utils.Iseq
 
   data FunClause = FC {
@@ -38,6 +39,8 @@ module Syntax.Expr where
     | Econs   Expr Expr
     | Eif     Expr Expr Expr
     | Eseq    Expr Expr
+    | Ehandle Expr Expr
+    | EmatchFailure
     deriving Eq
 
   isAtomicExpr :: Expr -> Bool
@@ -87,6 +90,9 @@ module Syntax.Expr where
                                         iStr "}" ]
   pprExpr (Eseq e1 e2)      = pprAExpr e1 `iAppend` iStr "; "
                                           `iAppend` pprAExpr e2
+  pprExpr (Ehandle e1 e2)   = iConcat [ pprAExpr e1, iNewline, iStr "rescue",
+                                        iNewline, pprAExpr e2 ]
+  pprExpr EmatchFailure     = iStr matchFailure
 
   instance Show Expr where
     show = show . pprExpr

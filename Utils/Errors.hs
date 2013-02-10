@@ -1,7 +1,8 @@
 module Utils.Errors (
   unboundVariable,
   overlappingIds,
-  cannotUnify
+  cannotUnify,
+  matchFailure
 ) where
 
   unboundVariable :: String -> String
@@ -12,3 +13,6 @@ module Utils.Errors (
 
   cannotUnify :: Show a => a -> a -> String
   cannotUnify t1 t2 = "Cannot unify " ++ show t1 ++ " with " ++ show t2
+
+  matchFailure :: String
+  matchFailure = "Match failure"

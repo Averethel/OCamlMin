@@ -99,3 +99,12 @@ module TypeInference.Expr (typeOfExpr) where
     (t2, s2) <- typeOfExpr env cns e2
     s        <- unify $ singleConstraint t1 Tunit `addConstraints` cns
     return (t2 `applySubst` s, s ++ s2)
+  typeOfExpr env cns (Ehandle e1 e2)    = do
+    (t1, _)  <- typeOfExpr env cns e1
+    (t2, s2) <- typeOfExpr env cns e2
+    s        <- unify $ singleConstraint t1 t2 `addConstraints` cns
+    return (t2 `applySubst` s, s ++ s2)
+  typeOfExpr _   cns EmatchFailure      = do
+    v <- freshVar
+    s <- unify cns
+    return (v, s)
