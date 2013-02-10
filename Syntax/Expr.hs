@@ -56,13 +56,14 @@ module Syntax.Expr where
     | otherwise      = iStr "(" `iAppend` pprExpr e `iAppend` iStr ")"
 
   pprArgs :: [Expr] -> Iseq
-  pprArgs = iConcat . map pprAExpr
+  pprArgs = iInterleave (iStr " ") . map pprAExpr
 
   pprApplication :: Expr -> [Expr] -> Iseq
   pprApplication (Ebprim p) [e1, e2]  = iConcat [ pprAExpr e1, iStr " ",
                                                   pprBinaryPrim p, iStr " ",
                                                   pprAExpr e2 ]
-  pprApplication e          args      = iConcat [ pprExpr e, pprArgs args ]
+  pprApplication e          args      = iConcat [ pprExpr e, iStr " ",
+                                                  pprArgs args ]
 
   pprExpr :: Expr -> Iseq
   pprExpr (Econst c)        = pprConstant c
