@@ -16,9 +16,8 @@ module TypeInference.Unification (unify) where
   canUnify _             (Tvar _)      = True
   canUnify (Tlist t1)    (Tlist t2)    = canUnify t1 t2
   canUnify (Tref t1)     (Tref t2)     = canUnify t1 t2
-  canUnify (Ttuple ts1)  (Ttuple ts2)  =
-    length ts1 == length ts2 &&
-    and (zipWith canUnify ts1 ts2)
+  canUnify (Tpair t1 t2) (Tpair t3 t4) =
+    canUnify t1 t3 && canUnify t2 t4
   canUnify (Tfun as1 t1) (Tfun as2 t2) =
     length as1 == length as2 &&
     and (zipWith canUnify as1 as2) &&
@@ -28,7 +27,7 @@ module TypeInference.Unification (unify) where
   newConstraints :: Type -> Type -> Constraints
   newConstraints (Tlist t1)    (Tlist t2)    = [(t1, t2)]
   newConstraints (Tref t1)     (Tref t2)     = [(t1, t2)]
-  newConstraints (Ttuple ts1)  (Ttuple ts2)  = zip ts1 ts2
+  newConstraints (Tpair t1 t2) (Tpair t3 t4) = [(t1, t3), (t2, t4)]
   newConstraints (Tfun as1 t1) (Tfun as2 t2) = (t1, t2) : zip as1 as2
   newConstraints t1            t2            = assert (t1 == t2) []
 

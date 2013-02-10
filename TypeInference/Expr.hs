@@ -76,14 +76,15 @@ module TypeInference.Expr (typeOfExpr) where
     v        <- freshVar
     s        <- unify $ singleConstraint t1 (Tfun ts v) `addConstraints` cns
     return (v `applySubst` s `applySubst` s1, s)
-  typeOfExpr env cns (Etuple es)        = do
-    tas <- mapM (typeOfExpr env cns) es
-    s   <- unify cns
-    return (Ttuple (map fst tas) `applySubst` s, s)
+  typeOfExpr env cns (Epair e1 e2)      = do
+    (t1, _) <- typeOfExpr env cns e1
+    (t2, _) <- typeOfExpr env cns e2
+    s       <- unify cns
+    return (Tpair t1 t2 `applySubst` s, s)
   typeOfExpr env cns (Econs e1 e2)      = do
     (t1, s1) <- typeOfExpr env cns e1
     (t2, s2) <- typeOfExpr env cns e2
-    s       <- unify $ singleConstraint t2 (Tlist t1) `addConstraints` cns
+    s        <- unify $ singleConstraint t2 (Tlist t1) `addConstraints` cns
     return (t2 `applySubst` s `applySubst` s1 `applySubst` s2, s ++ s1 ++ s2)
   typeOfExpr env cns (Eif e1 e2 e3)     = do
     (t1, _)  <- typeOfExpr env cns e1

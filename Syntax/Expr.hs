@@ -34,7 +34,7 @@ module Syntax.Expr where
     | Elet    Pattern Expr Expr
     | Eletrec String [FunClause] Expr
     | Eapply  Expr [Expr]
-    | Etuple  [Expr]
+    | Epair   Expr Expr
     | Econs   Expr Expr
     | Eif     Expr Expr Expr
     | Eseq    Expr Expr
@@ -75,8 +75,8 @@ module Syntax.Expr where
                                         pprExpr (Efun fcs), iStr " in",
                                         iNewline, pprExpr e ]
   pprExpr (Eapply e args)   = pprApplication e args
-  pprExpr (Etuple es)       = iConcat [ iStr "(",  iInterleave (iStr ", ") $
-                                        map pprAExpr es, iStr ")" ]
+  pprExpr (Epair e1 e2)     = iConcat [ iStr "(",  iInterleave (iStr ", ") $
+                                        map pprAExpr [e1, e2], iStr ")" ]
   pprExpr (Econs e1 e2)     = pprAExpr e1 `iAppend` iStr " :: "
                                           `iAppend` pprAExpr e2
   pprExpr (Eif e1 e2 e3)    = iConcat [ iStr "if ( ", pprExpr e1,

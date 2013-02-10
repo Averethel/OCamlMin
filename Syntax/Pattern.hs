@@ -7,7 +7,7 @@ module Syntax.Pattern where
       Pwildcard
     | Pvar      String
     | Pconst    Constant
-    | Ptuple    [Pattern]
+    | Ppair     Pattern Pattern
     | Pcons     Pattern Pattern
     deriving Eq
 
@@ -29,9 +29,9 @@ module Syntax.Pattern where
     iStr v
   pprPattern (Pconst c)    =
     pprConstant c
-  pprPattern (Ptuple ps)   =
+  pprPattern (Ppair p1 p2) =
     iConcat [ iStr "(",  iInterleave (iStr ", ") $
-              map pprAPattern ps, iStr ")" ]
+              map pprAPattern [p1, p2], iStr ")" ]
   pprPattern (Pcons p1 p2) =
     pprAPattern p1 `iAppend` iStr " :: " `iAppend` pprAPattern p2
 

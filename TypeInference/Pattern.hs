@@ -28,7 +28,7 @@ module TypeInference.Pattern (typeAndBindingsOfPattern) where
   getids Pwildcard     = []
   getids (Pvar n)      = [n]
   getids (Pconst _)    = []
-  getids (Ptuple ps)   = concatMap getids ps
+  getids (Ppair p1 p2) = getids p1 ++ getids p2
   getids (Pcons p1 p2) = getids p1 ++ getids p2
 
   typeAndBindingsOfPattern :: (MonadError String m,  MonadState Counter m) =>
@@ -49,11 +49,10 @@ module TypeInference.Pattern (typeAndBindingsOfPattern) where
       typeAndBindingsOfPattern' (Pconst c)    = do
         t <- typeOfConstant c
         return (t, emptyEnv, emptyConstraints)
-      typeAndBindingsOfPattern' (Ptuple ps)   = do
-        tbcs <- mapM typeAndBindingsOfPattern ps
-        return (Ttuple $ map (\(a, _, _) -> a) tbcs,
-                concatMap (\(_, b, _) -> b) tbcs,
-                concatMap (\(_, _, c) -> c) tbcs)
+      typeAndBindingsOfPattern' (Ppair p1 p2) = do
+        (t1, e1, c1) <- typeAndBindingsOfPattern p1
+        (t2, e2, c2) <- typeAndBindingsOfPattern p2
+        return (Tpair t1 t2, e1 ++ e2, c1 ++ c2)
       typeAndBindingsOfPattern' (Pcons p1 p2) = do
         (t1, b1, c1) <- typeAndBindingsOfPattern p1
         (t2, b2, c2) <- typeAndBindingsOfPattern p2

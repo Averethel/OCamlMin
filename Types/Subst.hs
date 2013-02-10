@@ -23,11 +23,12 @@ module Types.Subst (
 
   applySingleSubst :: (String, Type) -> Type -> Type
   applySingleSubst (sb, tb) (Tvar v)
-    | sb == v                            = tb
-    | otherwise                          = Tvar v
-  applySingleSubst sb       (Tlist tp)   = Tlist $ applySingleSubst sb tp
-  applySingleSubst sb       (Tref tp)    = Tref $ applySingleSubst sb tp
-  applySingleSubst sb       (Ttuple ts)  = Ttuple $ map (applySingleSubst sb) ts
-  applySingleSubst sb       (Tfun as tp) =
+    | sb == v                             = tb
+    | otherwise                           = Tvar v
+  applySingleSubst sb       (Tlist tp)    = Tlist $ applySingleSubst sb tp
+  applySingleSubst sb       (Tref tp)     = Tref $ applySingleSubst sb tp
+  applySingleSubst sb       (Tpair t1 t2) = Tpair (applySingleSubst sb t1) $
+                                                   applySingleSubst sb t2
+  applySingleSubst sb       (Tfun as tp)  =
     Tfun (map (applySingleSubst sb) as) $ applySingleSubst sb tp
-  applySingleSubst _        tp           = tp
+  applySingleSubst _        tp            = tp

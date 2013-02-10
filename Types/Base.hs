@@ -8,7 +8,7 @@ module Types.Base where
     | Tvar    String
     | Tlist   Type
     | Tref    Type
-    | Ttuple  [Type]
+    | Tpair   Type Type
     | Tfun    [Type] Type
     deriving Eq
 
@@ -24,16 +24,16 @@ module Types.Base where
     | otherwise       = iStr "(" `iAppend` pprType t `iAppend` iStr ")"
 
   pprType :: Type -> Iseq
-  pprType Tint        = iStr "int"
-  pprType Tbool       = iStr "bool"
-  pprType Tunit       = iStr "unit"
-  pprType (Tvar v)    = iStr v
-  pprType (Tlist t)   = pprAType t `iAppend` iStr " list"
-  pprType (Tref t)    = pprType t `iAppend` iStr " ref"
-  pprType (Ttuple ts) = iConcat [ iStr "(", iInterleave (iStr ", ") $
-                                  map pprAType ts, iStr ")" ]
-  pprType (Tfun ts t) = iConcat [ iInterleave (iStr " -> ") $ map pprAType ts,
-                                  iStr " -> ", pprType t ]
+  pprType Tint          = iStr "int"
+  pprType Tbool         = iStr "bool"
+  pprType Tunit         = iStr "unit"
+  pprType (Tvar v)      = iStr v
+  pprType (Tlist t)     = pprAType t `iAppend` iStr " list"
+  pprType (Tref t)      = pprType t `iAppend` iStr " ref"
+  pprType (Tpair t1 t2) = iConcat [ iStr "(", iInterleave (iStr ", ") $
+                                    map pprAType [t1, t2], iStr ")" ]
+  pprType (Tfun ts t)   = iConcat [ iInterleave (iStr " -> ") $ map pprAType ts,
+                                    iStr " -> ", pprType t ]
 
   instance Show Type where
     show = show . pprType
