@@ -5,6 +5,10 @@ Implementation of OCamlMin language based on min-caml project.
 
 Changelog
 =========
+* 10 II 2013
+  * Added simple case expressions to language
+  * Added fail / handle expressions to language
+  * Compilation of pattern matching finished
 * 9 II 2013
   * Switched to pairs instead of tuples (to simplify compilation of pattern matching)
   * Added guards to function clauses (needed for pattern matching compilation)
