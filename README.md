@@ -5,6 +5,9 @@ Implementation of OCamlMin language based on min-caml project.
 
 Changelog
 =========
+* 9 II 2013
+  * Switched to pairs instead of tuples (to simplify compilation of pattern matching)
+  * Added guards to function clauses (needed for pattern matching compilation)
 * 1 II 2013
   * Added type inference
 * 31 I 2013
