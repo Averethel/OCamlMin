@@ -1,7 +1,5 @@
 module TypeInference where
-  import Syntax.Expr
-  import Syntax.Pattern
-  import Syntax.Constant
+  import Syntax
   import Types
 
   import TypeInference.Env

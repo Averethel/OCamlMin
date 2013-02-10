@@ -1,22 +1,24 @@
 module Syntax.Expr where
   import Syntax.BinaryPrim
   import Syntax.Constant
+  import Syntax.Constructor
   import Syntax.Pattern
   import Syntax.UnaryPrim
 
+  import Utils.Errors
   import Utils.Iseq
 
   data FunClause = FC {
     arguments :: [Pattern],
-    body      :: Expr
+    fbody      :: Expr
   } deriving Eq
 
   pprFunArgs :: [Pattern] -> Iseq
   pprFunArgs = iInterleave (iStr " ") . map pprAPattern
 
   pprFunClause :: FunClause -> Iseq
-  pprFunClause fc = pprFunArgs (arguments fc) `iAppend` iStr " -> "
-                                              `iAppend` pprExpr (body fc)
+  pprFunClause fc = pprFunArgs (arguments fc) `iAppend` iStr " -> " `iAppend`
+                    pprExpr (fbody fc)
 
   pprFunClauses :: [FunClause] -> Iseq
   pprFunClauses = iInterleave (iConcat [ iNewline, iStr "| "]) .
@@ -24,6 +26,25 @@ module Syntax.Expr where
 
   instance Show FunClause where
     show = show . pprFunClause
+
+  data CaseClause = CC {
+    constructor :: Constructor,
+    variables   :: [String],
+    cbody       :: Expr
+  } deriving Eq
+
+  pprCaseClause :: CaseClause -> Iseq
+  pprCaseClause cc = pprConstructor (constructor cc) `iAppend`
+                     iStr " " `iAppend`
+                     iInterleave (iStr " ") (map iStr $ variables cc) `iAppend`
+                     iStr " -> " `iAppend` pprExpr (cbody cc)
+
+  pprCaseClauses :: [CaseClause] -> Iseq
+  pprCaseClauses = iInterleave (iConcat [ iNewline, iStr "| "]) .
+                   map pprCaseClause
+
+  instance Show CaseClause where
+    show = show . pprCaseClause
 
   data Expr =
       Econst  Constant
@@ -38,6 +59,9 @@ module Syntax.Expr where
     | Econs   Expr Expr
     | Eif     Expr Expr Expr
     | Eseq    Expr Expr
+    | Ecase   Expr [CaseClause]
+    | Ehandle Expr Expr
+    | EmatchFailure
     deriving Eq
 
   isAtomicExpr :: Expr -> Bool
@@ -53,13 +77,14 @@ module Syntax.Expr where
     | otherwise      = iStr "(" `iAppend` pprExpr e `iAppend` iStr ")"
 
   pprArgs :: [Expr] -> Iseq
-  pprArgs = iConcat . map pprAExpr
+  pprArgs = iInterleave (iStr " ") . map pprAExpr
 
   pprApplication :: Expr -> [Expr] -> Iseq
   pprApplication (Ebprim p) [e1, e2]  = iConcat [ pprAExpr e1, iStr " ",
                                                   pprBinaryPrim p, iStr " ",
                                                   pprAExpr e2 ]
-  pprApplication e          args      = iConcat [ pprExpr e, pprArgs args ]
+  pprApplication e          args      = iConcat [ pprExpr e, iStr " ",
+                                                  pprArgs args ]
 
   pprExpr :: Expr -> Iseq
   pprExpr (Econst c)        = pprConstant c
@@ -87,6 +112,13 @@ module Syntax.Expr where
                                         iStr "}" ]
   pprExpr (Eseq e1 e2)      = pprAExpr e1 `iAppend` iStr "; "
                                           `iAppend` pprAExpr e2
+  pprExpr (Ecase arg cls)   = iConcat [ iStr "case ", pprAExpr arg,
+                                        iStr " of {", iNewline, indentation,
+                                        iIndent $ iStr "  " `iAppend`
+                                        pprCaseClauses cls, iNewline, iStr "}" ]
+  pprExpr (Ehandle e1 e2)   = iConcat [ pprAExpr e1, iNewline, iStr "rescue",
+                                        iNewline, pprAExpr e2 ]
+  pprExpr EmatchFailure     = iStr matchFailure
 
   instance Show Expr where
     show = show . pprExpr
