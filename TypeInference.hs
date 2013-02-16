@@ -1,4 +1,7 @@
-module TypeInference where
+module TypeInference (
+  typeOfExpression,
+  emptyEnv
+) where
   import Syntax
   import Types
 
