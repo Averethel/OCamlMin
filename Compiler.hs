@@ -1,4 +1,5 @@
 module Compiler (compile) where
+  import AlphaConvert
   import KNormal
   import PatternMatching
   import Syntax
@@ -7,4 +8,7 @@ module Compiler (compile) where
   compile :: Expr -> Either String KExpr
   compile expr = case typeOfExpression emptyEnv expr of
     Left er -> Left er
-    Right _ -> Right . convertToKNormal . compilePatternMatching $ expr
+    Right _ -> Right .
+      alphaConvert .
+      convertToKNormal .
+      compilePatternMatching $ expr
