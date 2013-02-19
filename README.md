@@ -7,6 +7,7 @@ Changelog
 =========
 * 19 II 2013
   * β-reduction
+  * nested let expressions flattening
 * 18 II 2013
   * α-conversion
 * 15 II 2013
