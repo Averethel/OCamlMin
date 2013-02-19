@@ -5,6 +5,8 @@ Implementation of OCamlMin language based on min-caml project.
 
 Changelog
 =========
+* 19 II 2013
+  * β-reduction
 * 18 II 2013
   * α-conversion
 * 15 II 2013
