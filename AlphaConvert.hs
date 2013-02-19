@@ -1,4 +1,4 @@
-module AlphaConvert (alphaConvert) where
+module AlphaConvert (alphaConvert, alphaConvertWithEnv) where
   import qualified AlphaConvert.AlphaConvert as AC
   import AlphaConvert.Counter
   import AlphaConvert.Env
@@ -7,4 +7,7 @@ module AlphaConvert (alphaConvert) where
   import Control.Monad.State
 
   alphaConvert :: KExpr -> KExpr
-  alphaConvert e = fst $ runState (AC.alphaConvert emptyEnv e) emptyState
+  alphaConvert = alphaConvertWithEnv emptyEnv
+
+  alphaConvertWithEnv :: Env -> KExpr -> KExpr
+  alphaConvertWithEnv env e = fst $ runState (AC.alphaConvert env e) emptyState
