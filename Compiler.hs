@@ -1,24 +1,25 @@
 module Compiler (compile) where
   import AlphaConvert
   import BetaReduce
+  import Inline
   import KNormal
   import LetFlatten
   import PatternMatching
   import Syntax
   import TypeInference
 
-  compiler :: Expr -> IO KExpr
-  compiler e0 = do
+  compiler :: Integer -> Expr -> IO KExpr
+  compiler t e0 = do
     let e1 = compilePatternMatching e0
     let e2 = convertToKNormal e1
     let e3 = alphaConvert e2
     e4 <- betaReduce e3
     let e5 = letFlatten e4
-    return e5
+    inline t e5
 
-  compile :: Expr -> IO (Either String KExpr)
-  compile expr = case typeOfExpression emptyEnv expr of
+  compile :: Integer -> Expr -> IO (Either String KExpr)
+  compile inlineTreshold expr = case typeOfExpression emptyEnv expr of
     Left er -> return $ Left er
     Right _ -> do
-      c <- compiler expr
+      c <- compiler inlineTreshold expr
       return $ Right c
