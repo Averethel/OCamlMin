@@ -2,6 +2,7 @@ module Compiler (compile) where
   import AlphaConvert
   import BetaReduce
   import KNormal
+  import LetFlatten
   import PatternMatching
   import Syntax
   import TypeInference
@@ -11,7 +12,9 @@ module Compiler (compile) where
     let e1 = compilePatternMatching e0
     let e2 = convertToKNormal e1
     let e3 = alphaConvert e2
-    betaReduce e3
+    e4 <- betaReduce e3
+    let e5 = letFlatten e4
+    return e5
 
   compile :: Expr -> IO (Either String KExpr)
   compile expr = case typeOfExpression emptyEnv expr of
