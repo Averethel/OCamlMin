@@ -1,6 +1,7 @@
 module Compiler (compile) where
   import AlphaConvert
   import BetaReduce
+  import ConstantsFold
   import Inline
   import KNormal
   import LetFlatten
@@ -15,7 +16,9 @@ module Compiler (compile) where
     let e3 = alphaConvert e2
     e4 <- betaReduce e3
     let e5 = letFlatten e4
-    inline t e5
+    e6 <- inline t e5
+    let e7 = constantsFold e6
+    return e7
 
   compile :: Integer -> Expr -> IO (Either String KExpr)
   compile inlineTreshold expr = case typeOfExpression emptyEnv expr of
