@@ -7,6 +7,7 @@ Changelog
 =========
 * 23 II 2013
   * Constant folding
+  * Unused definitions elimination
 * 19 II 2013
   * β-reduction
   * nested let expressions flattening
