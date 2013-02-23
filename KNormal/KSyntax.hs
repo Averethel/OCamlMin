@@ -1,6 +1,8 @@
 module KNormal.KSyntax where
   import Utils.Iseq
 
+  import Data.Set hiding (map)
+
   data FunDef = FD {
     name :: String,
     args :: [String],
@@ -48,6 +50,53 @@ module KNormal.KSyntax where
     deriving Eq                                 --   Known external functions:
                                                 --    - reference maker
                                                 --    - tag getter
+
+  freeVars :: KExpr -> Set String
+  freeVars (KEneg s)              =
+    singleton s
+  freeVars (KEload s)             =
+    singleton s
+  freeVars (KEadd s1 s2)          =
+    fromList [s1, s2]
+  freeVars (KEsub s1 s2)          =
+    fromList [s1, s2]
+  freeVars (KEmult s1 s2)         =
+    fromList [s1, s2]
+  freeVars (KEdiv s1 s2)          =
+    fromList [s1, s2]
+  freeVars (KEmod s1 s2)          =
+    fromList [s1, s2]
+  freeVars (KEstore s1 s2)        =
+    fromList [s1, s2]
+  freeVars (KEvar s)              =
+    singleton s
+  freeVars (KEifEq s1 s2 e1 e2)   =
+    s1 `insert` (s2 `insert` freeVars e1 `union` freeVars e2)
+  freeVars (KEifLE s1 s2 e1 e2)   =
+    s1 `insert` (s2 `insert` freeVars e1 `union` freeVars e2)
+  freeVars (KElet s e1 e2)        =
+    freeVars e1 `union` (s `delete` freeVars e2)
+  freeVars (KEletRec fd e)        =
+    freeVars (body fd) \\ fromList (args fd) `union`
+    (name fd `delete` freeVars e)
+  freeVars (KEapply s ss)         =
+    fromList $ s:ss
+  freeVars (KEpair s1 s2)         =
+    fromList [s1, s2]
+  freeVars (KEcons s1 s2)         =
+    fromList [s1, s2]
+  freeVars (KEletPair s1 s2 s3 e) =
+    s3 `insert` freeVars e \\ fromList [s1, s2]
+  freeVars (KEletList s1 s2 s3 e) =
+    s3 `insert` freeVars e \\ fromList [s1, s2]
+  freeVars (KEhandle e1 e2)       =
+    freeVars e1 `union` freeVars e2
+  freeVars (KEseq e1 e2)          =
+    freeVars e1 `union` freeVars e2
+  freeVars (KEextFunApp s ss)     =
+    fromList $ s:ss
+  freeVars _                      =
+    empty
 
   pprKExpr :: KExpr -> Iseq
   pprKExpr KEunit                   = iStr "()"
