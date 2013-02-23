@@ -2,6 +2,7 @@ module Compiler (compile) where
   import AlphaConvert
   import BetaReduce
   import ConstantsFold
+  import EliminateDefinitions
   import Inline
   import KNormal
   import LetFlatten
@@ -18,7 +19,7 @@ module Compiler (compile) where
     let e5 = letFlatten e4
     e6 <- inline t e5
     let e7 = constantsFold e6
-    return e7
+    eliminateDefinitions e7
 
   compile :: Integer -> Expr -> IO (Either String KExpr)
   compile inlineTreshold expr = case typeOfExpression emptyEnv expr of
