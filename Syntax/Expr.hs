@@ -52,7 +52,7 @@ module Syntax.Expr where
     | Ebprim  BinaryPrim
     | Evar    String
     | Efun    [FunClause]
-    | Elet    Pattern Expr Expr
+    | Elet    Pattern Expr Expr -- Constants are not allowed here
     | Eletrec String [FunClause] Expr
     | Eapply  Expr [Expr]
     | Epair   Expr Expr
