@@ -5,6 +5,8 @@ Implementation of OCamlMin language based on min-caml project.
 
 Changelog
 =========
+* 23 II 2013
+  * Constant folding
 * 19 II 2013
   * β-reduction
   * nested let expressions flattening
