@@ -1,6 +1,8 @@
 module ClosureConvert.CSyntax where
   import Utils.Iseq
 
+  import Data.Set hiding (map)
+
   data Label = L String deriving Eq
 
   instance Show Label where
@@ -50,6 +52,52 @@ module ClosureConvert.CSyntax where
     | CEhandle CExpr CExpr
     | CEseq CExpr CExpr
     deriving Eq
+
+  freeVars :: CExpr -> Set String
+  freeVars (CEneg s1)             =
+    singleton s1
+  freeVars (CEload s1)            =
+    singleton s1
+  freeVars (CEadd s1 s2)          =
+    fromList [s1, s2]
+  freeVars (CEsub s1 s2)          =
+    fromList [s1, s2]
+  freeVars (CEmult s1 s2)         =
+    fromList [s1, s2]
+  freeVars (CEdiv s1 s2)          =
+    fromList [s1, s2]
+  freeVars (CEmod s1 s2)          =
+    fromList [s1, s2]
+  freeVars (CEstore s1 s2)        =
+    fromList [s1, s2]
+  freeVars (CEvar s1)             =
+    singleton s1
+  freeVars (CEifEq s1 s2 e1 e2)   =
+    s1 `insert` (s2 `insert` freeVars e1 `union` freeVars e2)
+  freeVars (CEifLE s1 s2 e1 e2)   =
+    s1 `insert` (s2 `insert` freeVars e1 `union` freeVars e2)
+  freeVars (CElet s1 e1 e2)       =
+    s1 `delete` (freeVars e1 `union` freeVars e2)
+  freeVars (CEmakeClj s1 clj e)   =
+    s1 `delete` (fromList (actFvs clj) `union` freeVars e)
+  freeVars (CEappClj s1 ss)       =
+    fromList $ s1 : ss
+  freeVars (CEappDir _ ss)        =
+    fromList ss
+  freeVars (CEpair s1 s2)         =
+    fromList [s1, s2]
+  freeVars (CEcons s1 s2)         =
+    fromList [s1, s2]
+  freeVars (CEletPair s1 s2 s3 e) =
+    s3 `insert` freeVars e \\ fromList [s1, s2]
+  freeVars (CEletList s1 s2 s3 e) =
+    s3 `insert` freeVars e \\ fromList [s1, s2]
+  freeVars (CEhandle e1 e2)       =
+    freeVars e1 `union` freeVars e2
+  freeVars (CEseq e1 e2)          =
+    freeVars e1 `union` freeVars e2
+  freeVars _                      =
+    empty
 
   pprCExpr :: CExpr -> Iseq
   pprCExpr CEunit                 = iStr "()"
