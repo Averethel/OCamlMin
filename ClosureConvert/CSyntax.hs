@@ -132,7 +132,10 @@ module ClosureConvert.CSyntax where
   instance Show FunDef where
     show = show . pprFunDef
 
-  data Program = P [FunDef] CExpr deriving Eq
+  data Program = P {
+    definitions :: [FunDef],
+    main        :: CExpr
+  } deriving Eq
 
   pprProgram :: Program -> Iseq
   pprProgram (P []  e) = pprCExpr e
