@@ -5,9 +5,12 @@ Implementation of OCamlMin language based on min-caml project.
 
 Changelog
 =========
+* 11 III 2013
+  * Closure conversion module
 * 23 II 2013
   * Constant folding
   * Unused definitions elimination
+  * Syntax for closure converted expressions
 * 19 II 2013
   * β-reduction
   * nested let expressions flattening
