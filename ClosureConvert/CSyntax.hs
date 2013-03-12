@@ -33,7 +33,7 @@ module ClosureConvert.CSyntax where
     | CEmult String String
     | CEdiv String String
     | CEmod String String
-    | CEStore String String
+    | CEstore String String
     --
     | CEvar String
     | CEerror String
@@ -42,13 +42,13 @@ module ClosureConvert.CSyntax where
     | CElet String CExpr CExpr
     | CEmakeClj String Closure CExpr
     | CEappClj String [String]
-    | CEappDir String [String]
+    | CEappDir Label [String]
     | CEpair String String
     | CEcons String String
     | CEletPair String String String CExpr
     | CEletList String String String CExpr
     | CEhandle CExpr CExpr
-    | CESeq CExpr CExpr
+    | CEseq CExpr CExpr
     deriving Eq
 
   pprCExpr :: CExpr -> Iseq
@@ -62,7 +62,7 @@ module ClosureConvert.CSyntax where
   pprCExpr (CEmult s1 s2)         = iConcat [ iStr s1, iStr " * ", iStr s2 ]
   pprCExpr (CEdiv s1 s2)          = iConcat [ iStr s1, iStr " / ", iStr s2 ]
   pprCExpr (CEmod s1 s2)          = iConcat [ iStr s1, iStr " % ", iStr s2 ]
-  pprCExpr (CEStore s1 s2)        = iConcat [ iStr s1, iStr " := ", iStr s2 ]
+  pprCExpr (CEstore s1 s2)        = iConcat [ iStr s1, iStr " := ", iStr s2 ]
   pprCExpr (CEvar s)              = iStr s
   pprCExpr (CEerror s)            = iStr s
   pprCExpr (CEifEq s1 s2 e1 e2)   = iConcat [ iStr "if ", iStr s1,
@@ -92,7 +92,8 @@ module ClosureConvert.CSyntax where
                                               iInterleave (iStr ", ") $
                                                 map iStr ss,
                                               iStr " )" ]
-  pprCExpr (CEappDir s ss)        = iInterleave (iStr " ") $ map iStr $ s:ss
+  pprCExpr (CEappDir s ss)        = iInterleave (iStr " ") $ map iStr $
+                                                                  show s:ss
   pprCExpr (CEpair s1 s2)         = iConcat [ iStr "(", iStr s1, iStr ", ",
                                               iStr s2, iStr ")" ]
   pprCExpr (CEcons s1 s2)         = iConcat [ iStr s1, iStr "::", iStr s2 ]
@@ -107,7 +108,7 @@ module ClosureConvert.CSyntax where
   pprCExpr (CEhandle e1 e2)       = iConcat [ pprCExpr e1, iNewline,
                                               iStr "rescue", iNewline,
                                               pprCExpr e2 ]
-  pprCExpr (CESeq e1 e2)          = iConcat [ pprCExpr e1, iStr "; ",
+  pprCExpr (CEseq e1 e2)          = iConcat [ pprCExpr e1, iStr "; ",
                                               pprCExpr e2 ]
 
   instance Show CExpr where
