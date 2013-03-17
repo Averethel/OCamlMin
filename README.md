@@ -5,6 +5,8 @@ Implementation of OCamlMin language based on min-caml project.
 
 Changelog
 =========
+* 17 III 2013
+  * SPARC assembly syntax defined
 * 11 III 2013
   * Closure conversion module
 * 23 II 2013
