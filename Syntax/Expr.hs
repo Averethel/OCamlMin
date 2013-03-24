@@ -10,7 +10,7 @@ module Syntax.Expr where
 
   data FunClause = FC {
     arguments :: [Pattern],
-    fbody      :: Expr
+    fbody     :: Expr
   } deriving Eq
 
   pprFunArgs :: [Pattern] -> Iseq

@@ -1,14 +1,13 @@
 module Syntax (
-  CaseClause(..),
   Constant(..),
   Constructor(..),
   UnaryPrim(..),
   BinaryPrim(..),
   Pattern(..),
   FunClause(..),
+  CaseClause(..),
   Expr(..),
-  arity,
-  constructors
+  arity
 ) where
   import Syntax.Constant
   import Syntax.Constructor
