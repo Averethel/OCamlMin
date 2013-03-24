@@ -1,6 +1,8 @@
 module Types.Base where
   import Utils.Iseq
 
+  import Data.List
+
   data Type =
       Tint
     | Tbool
@@ -11,6 +13,17 @@ module Types.Base where
     | Tpair   Type Type
     | Tfun    [Type] Type
     deriving Eq
+
+  genId :: Type -> String
+  genId Tint          = "i"
+  genId Tbool         = "b"
+  genId Tunit         = "u"
+  genId (Tvar v)      = "fv_" ++ v
+  genId (Tlist t)     = "l_" ++ genId t
+  genId (Tref t)      = "r_" ++ genId t
+  genId (Tpair t1 t2) = "p_" ++ genId t1 ++ "_" ++ genId t2
+  genId (Tfun ts tr)  = "f_" ++ intercalate "_" (map genId ts) ++ "_" ++
+                        genId tr
 
   isAtomicType :: Type -> Bool
   isAtomicType (Tfun _ _) = False
