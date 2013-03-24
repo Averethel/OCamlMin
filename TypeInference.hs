@@ -3,7 +3,7 @@ module TypeInference (
   emptyEnv
 ) where
   import Syntax
-  import Types
+  import TypedSyntax
 
   import TypeInference.Env
   import TypeInference.Expr
@@ -13,7 +13,7 @@ module TypeInference (
   import Control.Monad.Error
   import Control.Monad.State
 
-  typeOfExpression :: Env -> Expr -> Either String Type
+  typeOfExpression :: Env -> Expr -> Either String TypedExpr
   typeOfExpression env e =
     case fst $ runState (runErrorT $ typeOfExpr env emptyConstraints e) emptyState of
       Left s       -> Left s

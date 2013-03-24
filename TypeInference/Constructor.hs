@@ -4,6 +4,7 @@
 
 module TypeInference.Constructor where
   import Syntax.Constructor
+  import TypedSyntax.Constructor
   import Types
 
   import TypeInference.Counter
@@ -14,22 +15,23 @@ module TypeInference.Constructor where
   import Control.Monad.State
 
   typeAndBindingsOfConstructor :: (MonadState Counter m, MonadError String m) =>
-                                  Constructor -> [String] -> m (Type, Env)
+                                  Constructor -> [String] ->
+                                  m (TypedConstructor, Env)
   typeAndBindingsOfConstructor CNnil   []     = do
     v <- freshVar
-    return (Tlist v, [])
+    return ((CNnil, Tlist v), [])
   typeAndBindingsOfConstructor CNcons  [h, t] = do
     v <- freshVar
-    return (Tlist v, [(h, v), (t, Tlist v)])
+    return ((CNcons, Tfun [v, Tlist v] $ Tlist v), [(h, v), (t, Tlist v)])
   typeAndBindingsOfConstructor CNpair  [x, y] = do
     v1 <- freshVar
     v2 <- freshVar
-    return (Tpair v1 v2, [(x, v1), (y, v2)])
+    return ((CNpair, Tfun [v1, v2] $ Tpair v1 v2), [(x, v1), (y, v2)])
   typeAndBindingsOfConstructor CNtrue  []     =
-    return (Tbool, [])
+    return ((CNtrue, Tbool), [])
   typeAndBindingsOfConstructor CNfalse []     =
-    return (Tbool, [])
+    return ((CNfalse, Tbool), [])
   typeAndBindingsOfConstructor CNunit  []     =
-    return (Tunit, [])
+    return ((CNunit, Tunit), [])
   typeAndBindingsOfConstructor c       as     =
     assert (arity c == length as) typeAndBindingsOfConstructor c as

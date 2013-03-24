@@ -4,6 +4,7 @@
 
 module TypeInference.Pattern (typeAndBindingsOfPattern) where
   import Syntax.Pattern
+  import TypedSyntax.Pattern
   import Types
   import Utils.Errors
 
@@ -32,30 +33,33 @@ module TypeInference.Pattern (typeAndBindingsOfPattern) where
   getids (Pcons p1 p2) = getids p1 ++ getids p2
 
   typeAndBindingsOfPattern :: (MonadError String m,  MonadState Counter m) =>
-                              Pattern -> m (Type, Env, Constraints)
+                              Pattern -> m (TypedPattern, Env, Constraints)
   typeAndBindingsOfPattern p
     | idsDistinct $ getids p = typeAndBindingsOfPattern' p
     | otherwise              = throwError $ overlappingIds p
     where
       typeAndBindingsOfPattern' :: (MonadError String m,
                                     MonadState Counter m) =>
-                                    Pattern -> m (Type, Env, Constraints)
+                                    Pattern ->
+                                    m (TypedPattern, Env, Constraints)
       typeAndBindingsOfPattern' Pwildcard     = do
         v <- freshVar
-        return (v, emptyEnv, emptyConstraints)
+        return (TPwildcard v, emptyEnv, emptyConstraints)
       typeAndBindingsOfPattern' (Pvar n)      = do
         v <- freshVar
-        return (v, emptyEnv `extend` (n, v), emptyConstraints)
+        return (TPvar n v, emptyEnv `extend` (n, v), emptyConstraints)
       typeAndBindingsOfPattern' (Pconst c)    = do
-        t <- typeOfConstant c
-        return (t, emptyEnv, emptyConstraints)
+        tc <- typeOfConstant c
+        return (TPconst (c, tc), emptyEnv, emptyConstraints)
       typeAndBindingsOfPattern' (Ppair p1 p2) = do
-        (t1, e1, c1) <- typeAndBindingsOfPattern p1
-        (t2, e2, c2) <- typeAndBindingsOfPattern p2
-        return (Tpair t1 t2, e1 ++ e2, c1 ++ c2)
+        (tp1, e1, c1) <- typeAndBindingsOfPattern p1
+        (tp2, e2, c2) <- typeAndBindingsOfPattern p2
+        let tp = Tpair (typeOfTypedPattern tp1) $ typeOfTypedPattern tp2
+        return (TPpair tp1 tp2 tp, e1 ++ e2, c1 ++ c2)
       typeAndBindingsOfPattern' (Pcons p1 p2) = do
-        (t1, b1, c1) <- typeAndBindingsOfPattern p1
-        (t2, b2, c2) <- typeAndBindingsOfPattern p2
-        return (t2, b1 ++ b2,
-                singleConstraint t2 (Tlist t1) `addConstraints`
+        (tp1, b1, c1) <- typeAndBindingsOfPattern p1
+        (tp2, b2, c2) <- typeAndBindingsOfPattern p2
+        return (TPcons tp1 tp2 $ typeOfTypedPattern tp2, b1 ++ b2,
+                singleConstraint (typeOfTypedPattern tp2)
+                (Tlist $ typeOfTypedPattern tp1) `addConstraints`
                 c1 `addConstraints` c2 )
