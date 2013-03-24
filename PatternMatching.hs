@@ -7,15 +7,15 @@ module PatternMatching (compilePatternMatching) where
   import PatternMatching.EliminateLetSubpatterns
   import PatternMatching.NameWildcards
   import PatternMatching.NumbersToIfs
-  import PatternMatching.ToCases
   import PatternMatching.ToHandles
+  import PatternMatching.ToCases
   import PatternMatching.SimplifyHandles
 
   import Control.Monad.State
 
-  import Syntax
+  import TypedSyntax
 
-  matcherCompiler :: MonadState Counter m => Expr -> m Expr
+  matcherCompiler :: MonadState Counter m => TypedExpr -> m TypedExpr
   matcherCompiler e = do
     e1 <- nameWildcards e
     e2 <- eliminateLetSubPatterns e1
@@ -24,5 +24,5 @@ module PatternMatching (compilePatternMatching) where
     e5 <- handlesToCases e4
     return $ simplifyHandles e5
 
-  compilePatternMatching :: Expr -> Expr
+  compilePatternMatching :: TypedExpr -> TypedExpr
   compilePatternMatching e = fst $ runState (matcherCompiler e) emptyState

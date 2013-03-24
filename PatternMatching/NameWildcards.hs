@@ -3,79 +3,81 @@
   #-}
 
 module PatternMatching.NameWildcards (nameWildcards) where
-  import Syntax
+  import TypedSyntax
 
   import PatternMatching.Counters
 
   import Control.Monad.State
 
-  nameWildcardsPattern :: MonadState Counter m => Pattern -> m Pattern
-  nameWildcardsPattern Pwildcard     = do
-    v <- freshWildcard
-    return $ Pvar v
-  nameWildcardsPattern (Ppair p1 p2) = do
+  nameWildcardsPattern :: MonadState Counter m => TypedPattern -> m TypedPattern
+  nameWildcardsPattern (TPwildcard t)   = do
+    v <- freshWildcard t
+    return $ TPvar v t
+  nameWildcardsPattern (TPpair p1 p2 t) = do
     p1' <- nameWildcardsPattern p1
     p2' <- nameWildcardsPattern p2
-    return $ Ppair p1' p2'
-  nameWildcardsPattern (Pcons p1 p2) = do
+    return $ TPpair p1' p2' t
+  nameWildcardsPattern (TPcons p1 p2 t) = do
     p1' <- nameWildcardsPattern p1
     p2' <- nameWildcardsPattern p2
-    return $ Pcons p1' p2'
-  nameWildcardsPattern p             =
+    return $ TPcons p1' p2' t
+  nameWildcardsPattern p                =
     return p
 
-  nameWildcardsFunClause :: MonadState Counter m => FunClause -> m FunClause
+  nameWildcardsFunClause :: MonadState Counter m => TypedFunClause ->
+                            m TypedFunClause
   nameWildcardsFunClause fc = do
-    p' <- mapM nameWildcardsPattern $ arguments fc
-    b' <- nameWildcards $ fbody fc
-    return FC{ arguments = p', fbody = b' }
+    p' <- mapM nameWildcardsPattern $ tfcArguments fc
+    b' <- nameWildcards $ tfcBody fc
+    return TFC { tfcArguments = p', tfcBody = b' }
 
-  nameWildcardsCaseClause :: MonadState Counter m => CaseClause -> m CaseClause
+  nameWildcardsCaseClause :: MonadState Counter m => TypedCaseClause ->
+                             m TypedCaseClause
   nameWildcardsCaseClause cc = do
-    b' <- nameWildcards $ cbody cc
-    return cc{ cbody = b' }
+    b' <- nameWildcards $ tccBody cc
+    return cc { tccBody = b' }
 
-  nameWildcards :: MonadState Counter m => Expr -> m Expr
-  nameWildcards (Efun fcs)        = do
+  nameWildcards :: MonadState Counter m => TypedExpr -> m TypedExpr
+  nameWildcards (TEfun fcs t)             = do
     fcs' <- mapM nameWildcardsFunClause fcs
-    return $ Efun fcs'
-  nameWildcards (Elet p e1 e2)    = do
+    return $ TEfun fcs' t
+  nameWildcards (TElet p e1 e2 t)         = do
     p'  <- nameWildcardsPattern p
     e1' <- nameWildcards e1
     e2' <- nameWildcards e2
-    return $ Elet p' e1' e2'
-  nameWildcards (Eletrec n fcs e) = do
+    return $ TElet p' e1' e2' t
+  nameWildcards (TEletrec n t1 fcs e t2)  = do
     fcs' <- mapM nameWildcardsFunClause fcs
     e'   <- nameWildcards e
-    return $ Eletrec n fcs' e'
-  nameWildcards (Eapply e1 as)    = do
+    return $ TEletrec n t1 fcs' e' t2
+  nameWildcards (TEapply e1 as t)         = do
     e1' <- nameWildcards e1
     as' <- mapM nameWildcards as
-    return $ Eapply e1' as'
-  nameWildcards (Epair e1 e2)     = do
+    return $ TEapply e1' as' t
+  nameWildcards (TEpair e1 e2 t)          = do
     e1' <- nameWildcards e1
     e2' <- nameWildcards e2
-    return $ Epair e1' e2'
-  nameWildcards (Econs e1 e2)     = do
+    return $ TEpair e1' e2' t
+  nameWildcards (TEcons e1 e2 t)          = do
     e1' <- nameWildcards e1
     e2' <- nameWildcards e2
-    return $ Econs e1' e2'
-  nameWildcards (Eif e1 e2 e3)    = do
+    return $ TEcons e1' e2' t
+  nameWildcards (TEif e1 e2 e3 t)         = do
     e1' <- nameWildcards e1
     e2' <- nameWildcards e2
     e3' <- nameWildcards e3
-    return $ Eif e1' e2' e3'
-  nameWildcards (Eseq e1 e2)      = do
+    return $ TEif e1' e2' e3' t
+  nameWildcards (TEseq e1 e2 t)           = do
     e1' <- nameWildcards e1
     e2' <- nameWildcards e2
-    return $ Eseq e1' e2'
-  nameWildcards (Ecase e1 ccs)    = do
+    return $ TEseq e1' e2' t
+  nameWildcards (TEcase e1 ccs t)         = do
     e1'  <- nameWildcards e1
     ccs' <- mapM nameWildcardsCaseClause ccs
-    return $ Ecase e1' ccs'
-  nameWildcards (Ehandle e1 e2)   = do
+    return $ TEcase e1' ccs' t
+  nameWildcards (TEhandle e1 e2 t)        = do
     e1' <- nameWildcards e1
     e2' <- nameWildcards e2
-    return $ Ehandle e1' e2'
-  nameWildcards e                 =
+    return $ TEhandle e1' e2' t
+  nameWildcards e                         =
     return e

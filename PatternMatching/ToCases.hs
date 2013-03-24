@@ -4,6 +4,8 @@
 
 module PatternMatching.ToCases (handlesToCases) where
   import Syntax
+  import TypedSyntax
+  import Types
   import Rename
 
   import PatternMatching.Counters
@@ -11,25 +13,27 @@ module PatternMatching.ToCases (handlesToCases) where
   import Control.Exception.Base
   import Control.Monad.State
 
-  type Equation = ([Pattern], Expr)
+  type Equation = ([TypedPattern], TypedExpr)
 
   isVar :: Equation -> Bool
-  isVar (Pvar _:_, _)    = True
+  isVar (TPvar _ _:_, _) = True
   isVar _                = False
 
-  getCon :: Equation -> Constructor
-  getCon (Pconst Cnil:_, _)          = CNnil
-  getCon (Pcons _ _:_, _)            = CNcons
-  getCon (Ppair _ _:_, _)            = CNpair
-  getCon (Pconst (Cbool True):_, _)  = CNtrue
-  getCon (Pconst (Cbool False):_, _) = CNfalse
-  getCon (Pconst Cunit:_, _)         = CNunit
-  getCon e                           = assert False $ getCon e
+  getCon :: Equation -> TypedConstructor
+  getCon (TPconst (Cnil, t):_, _)        = (CNnil, t)
+  getCon (TPcons p1 p2 t:_, _)           = (CNcons, Tfun [typeOfTypedPattern p1,
+                                                       typeOfTypedPattern p2] t)
+  getCon (TPpair p1 p2 t:_, _)           = (CNpair, Tfun [typeOfTypedPattern p1,
+                                                       typeOfTypedPattern p2] t)
+  getCon (TPconst (Cbool True, t):_, _)  = (CNtrue, t)
+  getCon (TPconst (Cbool False, t):_, _) = (CNfalse, t)
+  getCon (TPconst (Cunit, t):_, _)       = (CNunit, t)
+  getCon e                               = assert False $ getCon e
 
-  subpaterns :: Pattern -> [Pattern]
-  subpaterns (Pcons p1 p2) = [p1, p2]
-  subpaterns (Ppair p1 p2) = [p1, p2]
-  subpaterns _             = []
+  subpaterns :: TypedPattern -> [TypedPattern]
+  subpaterns (TPcons p1 p2 _) = [p1, p2]
+  subpaterns (TPpair p1 p2 _) = [p1, p2]
+  subpaterns _                = []
 
   partition :: (a -> Bool) -> [a] -> [[a]]
   partition _ []       = []
@@ -49,105 +53,113 @@ module PatternMatching.ToCases (handlesToCases) where
     acc' <- foldrM f a xs
     f x acc'
 
-  getVars :: [Pattern] -> [String]
-  getVars = map (\(Pvar x) -> x)
+  getVars :: [TypedPattern] -> [(String, Type)]
+  getVars = map (\(TPvar x t) -> (x, t))
 
   matchVar :: MonadState Counter m =>
-              [String] -> [([Pattern], Expr)] -> Expr -> m Expr
-  matchVar (u:us) qs =
-    match us [(ps, rename v u e) | (Pvar v : ps, e) <- qs]
+              [(String, Type)] -> [Equation] -> TypedExpr -> m TypedExpr
+  matchVar ((u, _):us) qs =
+    match us [(ps, rename v u e) | (TPvar v _: ps, e) <- qs]
   matchVar us     qs = assert False $ matchVar us qs
 
-  choose :: Constructor -> [Equation] -> [Equation]
-  choose c qs = [q | q <- qs, getCon q == c]
+  choose :: TypedConstructor -> [Equation] -> [Equation]
+  choose c qs = [q | q <- qs, fst (getCon q) == fst c]
 
   matchClause :: MonadState Counter m =>
-                 Constructor -> [String] -> [Equation] -> Expr -> m CaseClause
+                 TypedConstructor -> [(String, Type)] -> [Equation] ->
+                 TypedExpr -> m TypedCaseClause
   matchClause c (_:us) qs def = do
-    let k  = arity c
-    us' <- mapM (\_ -> freshVar) [1..k]
-    e'  <- match (us' ++ us) [(subpaterns p ++ ps, e) | (p : ps, e) <- qs] def
-    return CC { constructor = c, variables = us', cbody = e' }
+    let types = case snd c of { Tfun ts _ -> ts; _ -> [] }
+    us' <- mapM freshVar types
+    e'  <- match (zip us' types ++ us)
+          [(subpaterns p ++ ps, e) | (p : ps, e) <- qs] def
+    return TCC { tccConstructor = c, tccVariables = zip us' types, tccBody = e' }
   matchClause c us     qs def = assert False $ matchClause c us qs def
 
-  matchCon :: MonadState Counter m => [String] -> [Equation] -> Expr -> m Expr
-  matchCon (u:us) qs def = do
-    let cs = constructors $ getCon $ head qs
-    ms' <- mapM (\c -> matchClause c (u:us) (choose c qs) def) cs
-    return $ Ecase (Evar u) ms'
+  matchCon :: MonadState Counter m => [(String, Type)] -> [Equation] ->
+              TypedExpr -> m TypedExpr
+  matchCon ((u, t):us) qs def = do
+    let cs = constructors . getCon . head $ qs
+    ms' <- mapM (\c -> matchClause c ((u, t):us) (choose c qs) def) cs
+    let Tfun [_] r = typeOfTypedCaseClause . head $ ms'
+    return $ TEcase (TEvar u t) ms' r
   matchCon us     qs def = assert False $ matchCon us qs def
 
   matchVarCon :: MonadState Counter m =>
-                 [String] -> [Equation] -> Expr -> m Expr
+                 [(String, Type)] -> [Equation] -> TypedExpr -> m TypedExpr
   matchVarCon us qs def
     | isVar . head $ qs =
       matchVar us qs def
     | otherwise         =
       matchCon us qs def
 
-  match :: MonadState Counter m => [String] -> [Equation] -> Expr -> m Expr
+  match :: MonadState Counter m => [(String, Type)] -> [Equation] ->
+           TypedExpr -> m TypedExpr
   match []     qs def =
-    return $ foldr Ehandle def [e | ([], e) <- qs ]
+    return $ foldr (\a b -> TEhandle a b $ typeOfTypedExpr def) def
+            [e | ([], e) <- qs ]
   match (u:us) qs def =
     foldrM (matchVarCon (u:us)) def $ partition isVar qs
 
-  decompose :: Expr -> [Equation]
-  decompose (Ehandle (Eapply (Efun [fc]) _) e2) =
-    (arguments fc, fbody fc) : decompose e2
+  decompose :: TypedExpr -> [Equation]
+  decompose (TEhandle (TEapply (TEfun [fc] _) _ _) e2 _) =
+    (tfcArguments fc, tfcBody fc) : decompose e2
   decompose _                                   = []
 
-  handlesToCasesCaseClause :: MonadState Counter m => CaseClause -> m CaseClause
+  handlesToCasesCaseClause :: MonadState Counter m => TypedCaseClause ->
+                              m TypedCaseClause
   handlesToCasesCaseClause cc = do
-    b' <- handlesToCases $ cbody cc
-    return cc{ cbody = b' }
+    b' <- handlesToCases $ tccBody cc
+    return cc{ tccBody = b' }
 
-  handlesToCasesFunClauses :: MonadState Counter m => [FunClause] -> m FunClause
+  handlesToCasesFunClauses :: MonadState Counter m => [TypedFunClause] ->
+                              m TypedFunClause
   handlesToCasesFunClauses fcs = do
-    let eqs = concatMap (decompose . fbody) fcs
-    let ags = getVars . arguments . head $ fcs
-    cs' <- match ags eqs EmatchFailure
-    return FC { arguments = map Pvar ags, fbody = cs' }
+    let eqs = concatMap (decompose . tfcBody) fcs
+    let ags = getVars . tfcArguments . head $ fcs
+    cs' <- match ags eqs $ TEmatchFailure $ typeOfTypedFunClause . head $ fcs
+    return TFC { tfcArguments = map (uncurry TPvar) ags, tfcBody = cs' }
 
-  handlesToCases :: MonadState Counter m => Expr -> m Expr
-  handlesToCases (Efun fcs)        = do
+  handlesToCases :: MonadState Counter m => TypedExpr -> m TypedExpr
+  handlesToCases (TEfun fcs t)            = do
     cs <- handlesToCasesFunClauses fcs
-    return $ Efun [cs]
-  handlesToCases (Elet p e1 e2)     = do
+    return $ TEfun [cs] t
+  handlesToCases (TElet p e1 e2 t)        = do
     e1' <- handlesToCases e1
     e2' <- handlesToCases e2
-    return $ Elet p e1' e2'
-  handlesToCases (Eletrec n fcs e) = do
+    return $ TElet p e1' e2' t
+  handlesToCases (TEletrec n t1 fcs e t2) = do
     cs <- handlesToCasesFunClauses fcs
     e' <- handlesToCases e
-    return $ Eletrec n [cs] e'
-  handlesToCases (Eapply e1 as)     = do
+    return $ TEletrec n t1 [cs] e' t2
+  handlesToCases (TEapply e1 as t)        = do
     e1' <- handlesToCases e1
     as' <- mapM handlesToCases as
-    return $ Eapply e1' as'
-  handlesToCases (Epair e1 e2)      = do
+    return $ TEapply e1' as' t
+  handlesToCases (TEpair e1 e2 t)         = do
     e1' <- handlesToCases e1
     e2' <- handlesToCases e2
-    return $ Epair e1' e2'
-  handlesToCases (Econs e1 e2)      = do
+    return $ TEpair e1' e2' t
+  handlesToCases (TEcons e1 e2 t)         = do
     e1' <- handlesToCases e1
     e2' <- handlesToCases e2
-    return $ Econs e1' e2'
-  handlesToCases (Eif e1 e2 e3)     = do
+    return $ TEcons e1' e2' t
+  handlesToCases (TEif e1 e2 e3 t)        = do
     e1' <- handlesToCases e1
     e2' <- handlesToCases e2
     e3' <- handlesToCases e3
-    return $ Eif e1' e2' e3'
-  handlesToCases (Eseq e1 e2)       = do
+    return $ TEif e1' e2' e3' t
+  handlesToCases (TEseq e1 e2 t)          = do
     e1' <- handlesToCases e1
     e2' <- handlesToCases e2
-    return $ Eseq e1' e2'
-  handlesToCases (Ecase e1 ccs)     = do
+    return $ TEseq e1' e2' t
+  handlesToCases (TEcase e1 ccs t)        = do
     e1'  <- handlesToCases e1
     ccs' <- mapM handlesToCasesCaseClause ccs
-    return $ Ecase e1' ccs'
-  handlesToCases (Ehandle e1 e2)    = do
+    return $ TEcase e1' ccs' t
+  handlesToCases (TEhandle e1 e2 t)       = do
     e1' <- handlesToCases e1
     e2' <- handlesToCases e2
-    return $ Ehandle e1' e2'
-  handlesToCases e                  =
+    return $ TEhandle e1' e2' t
+  handlesToCases e                        =
     return e

@@ -7,7 +7,11 @@ module TypedSyntax (
   TypedFunClause(..),
   TypedCaseClause(..),
   TypedExpr(..),
-  constructors
+  constructors,
+  typeOfTypedCaseClause,
+  typeOfTypedExpr,
+  typeOfTypedFunClause,
+  typeOfTypedPattern
 ) where
   import TypedSyntax.Constant
   import TypedSyntax.Constructor

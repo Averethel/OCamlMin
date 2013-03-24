@@ -1,84 +1,83 @@
 module PatternMatching.SimplifyHandles (simplifyHandles) where
-  import Syntax.Expr
+  import TypedSyntax.Expr
 
-  cannotFailMatchingFunClause :: FunClause -> Bool
-  cannotFailMatchingFunClause = cannotFailMatching . fbody
+  cannotFailMatchingFunClause :: TypedFunClause -> Bool
+  cannotFailMatchingFunClause = cannotFailMatching . tfcBody
 
-  cannotFailMatchingCaseClause :: CaseClause -> Bool
-  cannotFailMatchingCaseClause = cannotFailMatching . cbody
+  cannotFailMatchingCaseClause :: TypedCaseClause -> Bool
+  cannotFailMatchingCaseClause = cannotFailMatching . tccBody
 
-  cannotFailMatching :: Expr -> Bool
-  cannotFailMatching (Efun fcs)        =
+  cannotFailMatching :: TypedExpr -> Bool
+  cannotFailMatching (TEfun fcs _)          =
     -- at this point we don't have to worry about incomlete matchings
     -- thosa have been taken care of in previos passes
     all cannotFailMatchingFunClause fcs
-  cannotFailMatching (Elet _ e1 e2)    =
+  cannotFailMatching (TElet _ e1 e2 _)      =
     cannotFailMatching e1 && cannotFailMatching e2
-  cannotFailMatching (Eletrec _ fcs e) =
+  cannotFailMatching (TEletrec _ _ fcs e _) =
     all cannotFailMatchingFunClause fcs && cannotFailMatching e
-  cannotFailMatching (Eapply e1 as)    =
+  cannotFailMatching (TEapply e1 as _)      =
     cannotFailMatching e1 && all cannotFailMatching as
-  cannotFailMatching (Epair e1 e2)     =
+  cannotFailMatching (TEpair e1 e2 _)       =
     cannotFailMatching e1 && cannotFailMatching e2
-  cannotFailMatching (Econs e1 e2)     =
+  cannotFailMatching (TEcons e1 e2 _)       =
     cannotFailMatching e1 && cannotFailMatching e2
-  cannotFailMatching (Eif e1 e2 e3)    =
+  cannotFailMatching (TEif e1 e2 e3 _)      =
     cannotFailMatching e1 && cannotFailMatching e2 && cannotFailMatching e3
-  cannotFailMatching (Eseq e1 e2)      =
+  cannotFailMatching (TEseq e1 e2 _)        =
     cannotFailMatching e1 && cannotFailMatching e2
-  cannotFailMatching (Ecase e ccs)     =
+  cannotFailMatching (TEcase e ccs _)       =
     cannotFailMatching e && all cannotFailMatchingCaseClause ccs
-  cannotFailMatching (Ehandle e1 e2)   =
+  cannotFailMatching (TEhandle e1 e2 _)     =
     cannotFailMatching e1 && cannotFailMatching e2
-  cannotFailMatching EmatchFailure     = False
-  cannotFailMatching _                 = True
+  cannotFailMatching (TEmatchFailure _)     = False
+  cannotFailMatching _                      = True
 
-  simplifyHandles1FunClause :: FunClause -> FunClause
+  simplifyHandles1FunClause :: TypedFunClause -> TypedFunClause
   simplifyHandles1FunClause fc =
-    fc{ fbody = simplifyHandles1 $ fbody fc }
+    fc{ tfcBody = simplifyHandles1 $ tfcBody fc }
 
-  simplifyHandles1CaseClause :: CaseClause -> CaseClause
+  simplifyHandles1CaseClause :: TypedCaseClause -> TypedCaseClause
   simplifyHandles1CaseClause cc =
-    cc{ cbody = simplifyHandles1 $ cbody cc }
+    cc{ tccBody = simplifyHandles1 $ tccBody cc }
 
-  simplifyHandles1 :: Expr -> Expr
-  simplifyHandles1 (Efun fcs)                  =
-    Efun $ map simplifyHandles1FunClause fcs
-  simplifyHandles1 (Elet p e1 e2)              =
-    Elet p (simplifyHandles1 e1) $ simplifyHandles1 e2
-  simplifyHandles1 (Eletrec n fcs e)           =
-    Eletrec n (map simplifyHandles1FunClause fcs) $ simplifyHandles1 e
-  simplifyHandles1 (Eapply e1 as)              =
-    Eapply (simplifyHandles1 e1) $ map simplifyHandles1 as
-  simplifyHandles1 (Epair e1 e2)               =
-    Epair (simplifyHandles1 e1) $ simplifyHandles1 e2
-  simplifyHandles1 (Econs e1 e2)               =
-    Econs (simplifyHandles1 e1) $ simplifyHandles1 e2
-  simplifyHandles1 (Eif e1 e2 e3)              =
-    Eif (simplifyHandles1 e1) (simplifyHandles1 e2) $
-        simplifyHandles1 e3
-  simplifyHandles1 (Eseq e1 e2)                =
-    Eseq (simplifyHandles1 e1) $ simplifyHandles1 e2
-  simplifyHandles1 (Ecase e1 ccs)              =
-    Ecase (simplifyHandles1 e1) $ map simplifyHandles1CaseClause ccs
-  simplifyHandles1 (Ehandle EmatchFailure e1)  =
+  simplifyHandles1 :: TypedExpr -> TypedExpr
+  simplifyHandles1 (TEfun fcs t)                      =
+    TEfun (map simplifyHandles1FunClause fcs) t
+  simplifyHandles1 (TElet p e1 e2 t)                  =
+    TElet p (simplifyHandles1 e1) (simplifyHandles1 e2) t
+  simplifyHandles1 (TEletrec n t1 fcs e t2)           =
+    TEletrec n t1 (map simplifyHandles1FunClause fcs) (simplifyHandles1 e) t2
+  simplifyHandles1 (TEapply e1 as t)                  =
+    TEapply (simplifyHandles1 e1) (map simplifyHandles1 as) t
+  simplifyHandles1 (TEpair e1 e2 t)                   =
+    TEpair (simplifyHandles1 e1) (simplifyHandles1 e2) t
+  simplifyHandles1 (TEcons e1 e2 t)                   =
+    TEcons (simplifyHandles1 e1) (simplifyHandles1 e2) t
+  simplifyHandles1 (TEif e1 e2 e3 t)                  =
+    TEif (simplifyHandles1 e1) (simplifyHandles1 e2) (simplifyHandles1 e3) t
+  simplifyHandles1 (TEseq e1 e2 t)                    =
+    TEseq (simplifyHandles1 e1) (simplifyHandles1 e2) t
+  simplifyHandles1 (TEcase e1 ccs t)                  =
+    TEcase (simplifyHandles1 e1) (map simplifyHandles1CaseClause ccs) t
+  simplifyHandles1 (TEhandle (TEmatchFailure _) e1 _) =
     simplifyHandles1 e1
-  simplifyHandles1 (Ehandle (Eif e1 e2 e3) e4)
+  simplifyHandles1 (TEhandle (TEif e1 e2 e3 i) e4 t)
     | cannotFailMatching (simplifyHandles1 e1) &&
-      cannotFailMatching (simplifyHandles1 e2) =
-      Eif (simplifyHandles1 e1) (simplifyHandles1 e2) $
-          Ehandle (simplifyHandles1 e3) $ simplifyHandles1 e4
-  simplifyHandles1 (Ehandle e1 EmatchFailure)  =
+      cannotFailMatching (simplifyHandles1 e2)        =
+      TEif (simplifyHandles1 e1) (simplifyHandles1 e2)
+           (TEhandle (simplifyHandles1 e3) (simplifyHandles1 e4) t) i
+  simplifyHandles1 (TEhandle e1 (TEmatchFailure _) _) =
     simplifyHandles1 e1
-  simplifyHandles1 (Ehandle e1 e2)
-    | cannotFailMatching (simplifyHandles1 e1) =
+  simplifyHandles1 (TEhandle e1 e2 t)
+    | cannotFailMatching (simplifyHandles1 e1)        =
       simplifyHandles1 e1
-    | otherwise                               =
-      Ehandle (simplifyHandles1 e1) $ simplifyHandles1 e2
-  simplifyHandles1 e                           =
+    | otherwise                                       =
+      TEhandle (simplifyHandles1 e1) (simplifyHandles1 e2) t
+  simplifyHandles1 e                                  =
     e
 
-  simplifyHandles :: Expr -> Expr
+  simplifyHandles :: TypedExpr -> TypedExpr
   simplifyHandles e
     | simplifyHandles1 e == e = e
     | otherwise               = simplifyHandles (simplifyHandles1 e)
