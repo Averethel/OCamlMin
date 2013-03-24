@@ -5,6 +5,10 @@ Implementation of OCamlMin language based on min-caml project.
 
 Changelog
 =========
+* 24 III 2013
+  * Added typed abstract syntax tree
+  * Type inference now generated typed AST instead of just type
+  * Pattern matching compiler works on typed ASTs
 * 17 III 2013
   * SPARC assembly syntax defined
 * 11 III 2013
