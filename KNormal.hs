@@ -6,9 +6,9 @@ module KNormal (
   import KNormal.KNormalize
   import KNormal.KSyntax
 
-  import Syntax
+  import TypedSyntax
 
   import Control.Monad.State
 
-  convertToKNormal :: Expr -> KExpr
+  convertToKNormal :: TypedExpr -> KExpr
   convertToKNormal e = fst $ runState (kNormalize e) emptyState
