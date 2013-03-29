@@ -5,6 +5,9 @@ Implementation of OCamlMin language based on min-caml project.
 
 Changelog
 =========
+* 29 III 2013
+  * K-Normalized syntax is now type annotated
+  * K-Normalization works on typed AST
 * 24 III 2013
   * Added typed abstract syntax tree
   * Type inference now generated typed AST instead of just type
