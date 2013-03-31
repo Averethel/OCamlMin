@@ -5,6 +5,14 @@ Implementation of OCamlMin language based on min-caml project.
 
 Changelog
 =========
+* 31 III 2013
+  * α-conversion on typed AST
+  * β-reduction on typed AST
+  * Nested let flattening on typed AST
+  * Inlining on typed AST
+  * Constant folding on typed AST
+  * Eliminating unused definitions on typed AST
+  * Closure conversion on typed AST
 * 29 III 2013
   * K-Normalized syntax is now type annotated
   * K-Normalization works on typed AST
