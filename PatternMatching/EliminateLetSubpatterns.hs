@@ -3,98 +3,107 @@
   #-}
 
 module PatternMatching.EliminateLetSubpatterns (eliminateLetSubPatterns) where
-  import Syntax.Expr
-  import Syntax.Pattern
+  import TypedSyntax.Expr
+  import TypedSyntax.Pattern
+
+  import Types
 
   import PatternMatching.Counters
 
   import Control.Monad.State
 
   getSubPatterns :: MonadState Counter m =>
-                    Pattern -> Expr -> m [(Pattern, Expr)]
-  getSubPatterns (Ppair p1 p2) e = getSubPatterns' Ppair p1 p2 e
-  getSubPatterns (Pcons p1 p2) e = getSubPatterns' Pcons p1 p2 e
-  getSubPatterns p             e = return [(p, e)]
+                    TypedPattern -> TypedExpr ->
+                    m [(TypedPattern, TypedExpr)]
+  getSubPatterns (TPpair p1 p2 t) e = getSubPatterns' TPpair p1 p2 t e
+  getSubPatterns (TPcons p1 p2 t) e = getSubPatterns' TPcons p1 p2 t e
+  getSubPatterns p                e = return [(p, e)]
 
   getSubPatterns' :: MonadState Counter m =>
-                     (Pattern -> Pattern -> Pattern) -> Pattern -> Pattern ->
-                     Expr -> m [(Pattern, Expr)]
-  getSubPatterns' cons p1 p2 e
-    | isAtomicPattern p1 &&
-      isAtomicPattern p2          = return [(cons p1 p2, e)]
-    | not (isAtomicPattern p1) &&
-      isAtomicPattern p2          = do
-        v  <- freshVar
-        ps <- getSubPatterns p1 (Evar v)
-        return $ (cons (Pvar v) p2, e) : ps
-    | isAtomicPattern p1 &&
-      not (isAtomicPattern p2)    = do
-        v  <- freshVar
-        ps <- getSubPatterns p2 (Evar v)
-        return $ (cons p1 (Pvar v), e) : ps
-    | otherwise                   = do
-      v1  <- freshVar
-      v2  <- freshVar
-      ps1 <- getSubPatterns p1 (Evar v1)
-      ps2 <- getSubPatterns p2 (Evar v2)
-      return $ (cons (Pvar v1) (Pvar v2), e) : (ps1 ++ ps2)
+                     (TypedPattern -> TypedPattern -> Type -> TypedPattern) ->
+                     TypedPattern -> TypedPattern -> Type -> TypedExpr ->
+                     m [(TypedPattern, TypedExpr)]
+  getSubPatterns' cons p1 p2 t e
+    | isAtomicTypedPattern p1 &&
+      isAtomicTypedPattern p2           = return [(cons p1 p2 t, e)]
+    | not (isAtomicTypedPattern p1) &&
+      isAtomicTypedPattern p2           = do
+        let t' = typeOfTypedPattern p1
+        v  <- freshVar t'
+        ps <- getSubPatterns p1 (TEvar v t')
+        return $ (cons (TPvar v t') p2 t, e) : ps
+    | isAtomicTypedPattern p1 &&
+      not (isAtomicTypedPattern p2)    = do
+        let t' = typeOfTypedPattern p2
+        v  <- freshVar t'
+        ps <- getSubPatterns p2 (TEvar v t')
+        return $ (cons p1 (TPvar v t') t, e) : ps
+    | otherwise                        = do
+      let t1' = typeOfTypedPattern p1
+      let t2' = typeOfTypedPattern p2
+      v1  <- freshVar t1'
+      v2  <- freshVar t2'
+      ps1 <- getSubPatterns p1 (TEvar v1 t1')
+      ps2 <- getSubPatterns p2 (TEvar v2 t2')
+      return $ (cons (TPvar v1 t1') (TPvar v2 t2') t, e) : (ps1 ++ ps2)
 
   eliminateLetSubPatternsFunClause :: MonadState Counter m =>
-                                      FunClause -> m FunClause
+                                      TypedFunClause -> m TypedFunClause
   eliminateLetSubPatternsFunClause fc = do
-    b' <- eliminateLetSubPatterns $ fbody fc
-    return fc{ fbody = b' }
+    b' <- eliminateLetSubPatterns $ tfcBody fc
+    return fc{ tfcBody = b' }
 
   eliminateLetSubPatternsCaseClause :: MonadState Counter m =>
-                                       CaseClause -> m CaseClause
+                                       TypedCaseClause -> m TypedCaseClause
   eliminateLetSubPatternsCaseClause cc = do
-    b' <- eliminateLetSubPatterns $ cbody cc
-    return cc{ cbody = b' }
+    b' <- eliminateLetSubPatterns $ tccBody cc
+    return cc{ tccBody = b' }
 
-  eliminateLetSubPatterns :: MonadState Counter m => Expr -> m Expr
-  eliminateLetSubPatterns (Efun fcs)        = do
+  eliminateLetSubPatterns :: MonadState Counter m => TypedExpr -> m TypedExpr
+  eliminateLetSubPatterns (TEfun fcs t)             = do
     fcs' <- mapM eliminateLetSubPatternsFunClause fcs
-    return $ Efun fcs'
-  eliminateLetSubPatterns (Elet p e1 e2)    = do
+    return $ TEfun fcs' t
+  eliminateLetSubPatterns (TElet p e1 e2 t)         = do
     e1' <- eliminateLetSubPatterns e1
     e2' <- eliminateLetSubPatterns e2
     if   not (hasSubPatterns p)
-    then return $ Elet p e1' e2'
+    then return $ TElet p e1' e2' t
     else do
       ps <- getSubPatterns p e1'
-      return $ foldr (\(px, ex) ey -> Elet px ex ey) e2' ps
-  eliminateLetSubPatterns (Eletrec n fcs e) = do
+      return $
+        foldr (\(px, ex) ey -> TElet px ex ey $ typeOfTypedExpr ey) e2' ps
+  eliminateLetSubPatterns (TEletrec n t1 fcs e t2)  = do
     fcs' <- mapM eliminateLetSubPatternsFunClause fcs
     e'   <- eliminateLetSubPatterns e
-    return $ Eletrec n fcs' e'
-  eliminateLetSubPatterns (Eapply e1 as)    = do
+    return $ TEletrec n t1 fcs' e' t2
+  eliminateLetSubPatterns (TEapply e1 as t)         = do
     e1' <- eliminateLetSubPatterns e1
     as' <- mapM eliminateLetSubPatterns as
-    return $ Eapply e1' as'
-  eliminateLetSubPatterns (Epair e1 e2)     = do
+    return $ TEapply e1' as' t
+  eliminateLetSubPatterns (TEpair e1 e2 t)          = do
     e1' <- eliminateLetSubPatterns e1
     e2' <- eliminateLetSubPatterns e2
-    return $ Epair e1' e2'
-  eliminateLetSubPatterns (Econs e1 e2)     = do
+    return $ TEpair e1' e2' t
+  eliminateLetSubPatterns (TEcons e1 e2 t)          = do
     e1' <- eliminateLetSubPatterns e1
     e2' <- eliminateLetSubPatterns e2
-    return $ Econs e1' e2'
-  eliminateLetSubPatterns (Eif e1 e2 e3)    = do
+    return $ TEcons e1' e2' t
+  eliminateLetSubPatterns (TEif e1 e2 e3 t)         = do
     e1' <- eliminateLetSubPatterns e1
     e2' <- eliminateLetSubPatterns e2
     e3' <- eliminateLetSubPatterns e3
-    return $ Eif e1' e2' e3'
-  eliminateLetSubPatterns (Eseq e1 e2)      = do
+    return $ TEif e1' e2' e3' t
+  eliminateLetSubPatterns (TEseq e1 e2 t)           = do
     e1' <- eliminateLetSubPatterns e1
     e2' <- eliminateLetSubPatterns e2
-    return $ Eseq e1' e2'
-  eliminateLetSubPatterns (Ecase e1 ccs)    = do
+    return $ TEseq e1' e2' t
+  eliminateLetSubPatterns (TEcase e1 ccs t)         = do
     e1'  <- eliminateLetSubPatterns e1
     ccs' <- mapM eliminateLetSubPatternsCaseClause ccs
-    return $ Ecase e1' ccs'
-  eliminateLetSubPatterns (Ehandle e1 e2)   = do
+    return $ TEcase e1' ccs' t
+  eliminateLetSubPatterns (TEhandle e1 e2 t)        = do
     e1' <- eliminateLetSubPatterns e1
     e2' <- eliminateLetSubPatterns e2
-    return $ Ehandle e1' e2'
-  eliminateLetSubPatterns e                 =
+    return $ TEhandle e1' e2' t
+  eliminateLetSubPatterns e                         =
     return e

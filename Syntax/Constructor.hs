@@ -28,11 +28,3 @@ module Syntax.Constructor where
   arity CNtrue  = 0
   arity CNfalse = 0
   arity CNunit  = 0
-
-  constructors :: Constructor -> [Constructor]
-  constructors CNnil    = [CNnil, CNcons]
-  constructors CNcons   = [CNnil, CNcons]
-  constructors CNpair   = [CNpair]
-  constructors CNtrue   = [CNtrue, CNfalse]
-  constructors CNfalse  = [CNtrue, CNfalse]
-  constructors CNunit   = [CNunit]

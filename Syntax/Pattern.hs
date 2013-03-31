@@ -17,13 +17,6 @@ module Syntax.Pattern where
   isAtomicPattern (Pconst _) = True
   isAtomicPattern _          = False
 
-  hasSubPatterns :: Pattern -> Bool
-  hasSubPatterns (Ppair p1 p2) = not (isAtomicPattern p1) ||
-                                 not (isAtomicPattern p2)
-  hasSubPatterns (Pcons p1 p2) = not (isAtomicPattern p1) ||
-                                 not (isAtomicPattern p2)
-  hasSubPatterns _             = False
-
   pprAPattern :: Pattern -> Iseq
   pprAPattern p
     | isAtomicPattern p = pprPattern p

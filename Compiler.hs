@@ -9,9 +9,10 @@ module Compiler (compile) where
   import LetFlatten
   import PatternMatching
   import Syntax
+  import TypedSyntax
   import TypeInference
 
-  compiler :: Integer -> Expr -> IO Program
+  compiler :: Integer -> TypedExpr -> IO Program
   compiler t e0 = do
     let e1 = compilePatternMatching e0
     let e2 = convertToKNormal e1
@@ -26,6 +27,6 @@ module Compiler (compile) where
   compile :: Integer -> Expr -> IO (Either String Program)
   compile inlineTreshold expr = case typeOfExpression emptyEnv expr of
     Left er -> return $ Left er
-    Right _ -> do
-      c <- compiler inlineTreshold expr
+    Right t -> do
+      c <- compiler inlineTreshold t
       return $ Right c
