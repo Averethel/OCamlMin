@@ -12,7 +12,7 @@ module Types.Base where
     | Tref    Type
     | Tpair   Type Type
     | Tfun    [Type] Type
-    deriving Eq
+    deriving (Eq, Ord)
 
   genId :: Type -> String
   genId Tint          = "i"
