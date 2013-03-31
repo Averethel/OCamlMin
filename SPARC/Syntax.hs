@@ -38,6 +38,7 @@ module SPARC.Syntax where
     | IfSubD String String
     | IfMulD String String
     | IfDivD String String
+    | IfModD String String
     | IldDF String IdOrIimm
     | IstDF String String IdOrIimm
     | Icomment String
