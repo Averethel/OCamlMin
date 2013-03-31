@@ -3,55 +3,55 @@ module ClosureConvert.ClosureConvert where
 
   import KNormal.KSyntax
 
-  import Data.Set
+  import Data.Set hiding (map)
 
   closureConvert :: [Label] -> KExpr -> IO Program
-  closureConvert _    KEunit               =
-    return $ P [] CEunit
-  closureConvert _    KEnil                =
-    return $ P [] CEnil
-  closureConvert _    (KEint n)            =
-    return $ P [] $ CEint n
-  closureConvert _    (KEneg x)            =
-    return $ P [] $ CEneg x
-  closureConvert _    (KEload r)           =
-    return $ P [] $ CEload r
-  closureConvert _    (KEadd x y)          =
-    return $ P [] $ CEadd x y
-  closureConvert _    (KEsub x y)          =
-    return $ P [] $ CEsub x y
-  closureConvert _    (KEmult x y)         =
-    return $ P [] $ CEmult x y
-  closureConvert _    (KEdiv x y)          =
-    return $ P [] $ CEdiv x y
-  closureConvert _    (KEmod x y)          =
-    return $ P [] $ CEmod x y
-  closureConvert _    (KEstore r x)        =
-    return $ P [] $ CEstore r x
-  closureConvert _    (KEvar x)            =
-    return $ P [] $ CEvar x
-  closureConvert _    (KEerror m)          =
-    return $ P [] $ CEerror m
-  closureConvert known (KEifEq x y e1 e2)   = do
+  closureConvert _    (KEunit t)                =
+    return $ P [] $ CEunit t
+  closureConvert _    (KEnil t)                 =
+    return $ P [] $ CEnil t
+  closureConvert _    (KEint n t)               =
+    return $ P [] $ CEint n t
+  closureConvert _    (KEneg x t)               =
+    return $ P [] $ CEneg x t
+  closureConvert _    (KEload r t)              =
+    return $ P [] $ CEload r t
+  closureConvert _    (KEadd x y t)             =
+    return $ P [] $ CEadd x y t
+  closureConvert _    (KEsub x y t)             =
+    return $ P [] $ CEsub x y t
+  closureConvert _    (KEmult x y t)            =
+    return $ P [] $ CEmult x y t
+  closureConvert _    (KEdiv x y t)             =
+    return $ P [] $ CEdiv x y t
+  closureConvert _    (KEmod x y t)             =
+    return $ P [] $ CEmod x y t
+  closureConvert _    (KEstore r x t)           =
+    return $ P [] $ CEstore r x t
+  closureConvert _    (KEvar x t)               =
+    return $ P [] $ CEvar x t
+  closureConvert _    (KEerror m t)             =
+    return $ P [] $ CEerror m t
+  closureConvert known (KEifEq x y e1 e2 t)     = do
     p1 <- closureConvert known e1
     p2 <- closureConvert known e2
     return $ P (definitions p1 ++ definitions p2)
-           $ CEifEq x y (main p1) $ main p2
-  closureConvert known (KEifLE x y e1 e2)   = do
+           $ CEifEq x y (main p1) (main p2) t
+  closureConvert known (KEifLE x y e1 e2 t)     = do
     p1 <- closureConvert known e1
     p2 <- closureConvert known e2
     return $ P (definitions p1 ++ definitions p2)
-           $ CEifLE x y (main p1) $ main p2
-  closureConvert known (KElet x e1 e2)      = do
+           $ CEifLE x y (main p1) (main p2) t
+  closureConvert known (KElet (x, tx) e1 e2 t)  = do
     p1 <- closureConvert known e1
     p2 <- closureConvert known e2
     return $ P (definitions p1 ++ definitions p2)
-           $ CElet x (main p1) $ main p2
-  closureConvert known (KEletRec fd e)      = do
-    let x  = KNormal.KSyntax.name fd
-    let as = KNormal.KSyntax.args fd
-    let e1 = KNormal.KSyntax.body fd
-    let known' = L x : known
+           $ CElet x tx (main p1) (main p2) t
+  closureConvert known (KEletRec fd e t)        = do
+    let (x, tx) = KNormal.KSyntax.name fd
+    let as      = KNormal.KSyntax.args fd
+    let e1      = KNormal.KSyntax.body fd
+    let known'  = L x : known
     p1 <- closureConvert known' e1
     let zs = ClosureConvert.CSyntax.freeVars (main p1) \\ fromList as
     (p1', known'') <-
@@ -66,40 +66,40 @@ module ClosureConvert.ClosureConvert where
         return (p1, known')
     p2 <- closureConvert known'' e
     let fvs = toList $ ClosureConvert.CSyntax.freeVars (main p1') \\
-                       singleton x `union` fromList as
-    let df = ClosureConvert.CSyntax.FD { ClosureConvert.CSyntax.name = L x,
+                       singleton (x, tx) `union` fromList as
+    let df = ClosureConvert.CSyntax.FD { ClosureConvert.CSyntax.name = (L x, tx),
              ClosureConvert.CSyntax.args = as,
                   formalFvs = fvs, ClosureConvert.CSyntax.body = main p1' }
     let dfs = df : (definitions p1' ++ definitions p2)
-    if x `member` ClosureConvert.CSyntax.freeVars (main p2)
+    if (x, tx) `member` ClosureConvert.CSyntax.freeVars (main p2)
     then
-      return $ P dfs $ CEmakeClj x C { entry = L x, actFvs = fvs } $ main p2
+      return $ P dfs $ CEmakeClj x C { entry = (L x, t), actFvs = fvs } (main p2) t
     else do
       putStrLn $ "Eliminating closure " ++ x
       return $ P dfs $ main p2
-  closureConvert known (KEapply s ss)
-    | L s `elem` known                      = do
-      putStrLn $ "Directly applying " ++ s
-      return $ P [] $ CEappDir (L s) ss
-    | otherwise                             =
-      return $ P [] $ CEappClj s ss
-  closureConvert _     (KEpair a b)         =
-    return $ P [] $ CEpair a b
-  closureConvert _     (KEcons h t)         =
-    return $ P [] $ CEcons h t
-  closureConvert known (KEletPair a b p e)  = do
+  closureConvert known (KEapply s ss t)
+    | L (fst s) `elem` known                    = do
+      putStrLn $ "Directly applying " ++ fst s
+      return $ P [] $ CEappDir (L $ fst s, snd s) ss t
+    | otherwise                                 =
+      return $ P [] $ CEappClj s ss t
+  closureConvert _     (KEpair a b t)           =
+    return $ P [] $ CEpair a b t
+  closureConvert _     (KEcons h t tp)          =
+    return $ P [] $ CEcons h t tp
+  closureConvert known (KEletPair a b p e t)    = do
     pr <- closureConvert known e
-    return $ P (definitions pr) $ CEletPair a b p $ main pr
-  closureConvert known (KEletList h t l e)  = do
+    return $ P (definitions pr) $ CEletPair a b p (main pr) t
+  closureConvert known (KEletList h t l e tp)   = do
     p <- closureConvert known e
-    return $ P (definitions p) $ CEletList h t l $ main p
-  closureConvert known (KEhandle e1 e2)     = do
+    return $ P (definitions p) $ CEletList h t l (main p) tp
+  closureConvert known (KEhandle e1 e2 t)       = do
     p1 <- closureConvert known e1
     p2 <- closureConvert known e2
-    return $ P (definitions p1 ++ definitions p2) $ CEhandle (main p1) $ main p2
-  closureConvert known (KEseq e1 e2)        = do
+    return $ P (definitions p1 ++ definitions p2) $ CEhandle (main p1) (main p2) t
+  closureConvert known (KEseq e1 e2 t)          = do
     p1 <- closureConvert known e1
     p2 <- closureConvert known e2
-    return $ P (definitions p1 ++ definitions p2) $ CEseq (main p1) $ main p2
-  closureConvert _    (KEextFunApp s ss)   =
-    return $ P [] $ CEappDir (L s) ss
+    return $ P (definitions p1 ++ definitions p2) $ CEseq (main p1) (main p2) t
+  closureConvert _    (KEextFunApp s ss t)      =
+    return $ P [] $ CEappDir (L . fst $ s, snd s) ss t
