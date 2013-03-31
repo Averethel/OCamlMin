@@ -10,12 +10,12 @@ module Inline.Env where
   emptyEnv = []
 
   member :: String -> Env -> Bool
-  member n = any (\x -> name x == n)
+  member n = any (\x -> (fst . name $ x) == n)
 
   find :: Env -> String -> ([String], KExpr)
   find e n =
-    let fd = fromJust $ L.find (\x -> name x == n) e
-    in (args fd, body fd)
+    let fd = fromJust $ L.find (\x -> (fst . name $ x) == n) e
+    in (map fst $ args fd, body fd)
 
   extend :: Env -> FunDef -> Env
   extend = flip (:)
