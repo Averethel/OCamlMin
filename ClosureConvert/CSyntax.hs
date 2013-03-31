@@ -57,50 +57,50 @@ module ClosureConvert.CSyntax where
     | CEseq CExpr CExpr Type
     deriving Eq
 
-  freeVars :: CExpr -> Set String
-  freeVars (CEneg (s1, _) _)                        =
+  freeVars :: CExpr -> Set (String, Type)
+  freeVars (CEneg s1 _)              =
     singleton s1
-  freeVars (CEload (s1, _) _)                       =
+  freeVars (CEload s1 _)             =
     singleton s1
-  freeVars (CEadd (s1, _) (s2, _) _)                =
+  freeVars (CEadd s1 s2 _)           =
     fromList [s1, s2]
-  freeVars (CEsub (s1, _) (s2, _) _)                =
+  freeVars (CEsub s1 s2 _)           =
     fromList [s1, s2]
-  freeVars (CEmult (s1, _) (s2, _) _)               =
+  freeVars (CEmult s1 s2 _)          =
     fromList [s1, s2]
-  freeVars (CEdiv (s1, _) (s2, _) _)                =
+  freeVars (CEdiv s1 s2 _)           =
     fromList [s1, s2]
-  freeVars (CEmod (s1, _) (s2, _) _)                =
+  freeVars (CEmod s1 s2 _)           =
     fromList [s1, s2]
-  freeVars (CEstore (s1, _) (s2, _) _)              =
+  freeVars (CEstore s1 s2 _)         =
     fromList [s1, s2]
-  freeVars (CEvar s1 _)                             =
-    singleton s1
-  freeVars (CEifEq (s1, _) (s2, _) e1 e2 _)         =
+  freeVars (CEvar s1 t)              =
+    singleton (s1, t)
+  freeVars (CEifEq s1 s2 e1 e2 _)    =
     s1 `insert` (s2 `insert` freeVars e1 `union` freeVars e2)
-  freeVars (CEifLE (s1, _) (s2, _) e1 e2 _)         =
+  freeVars (CEifLE s1 s2 e1 e2 _)    =
     s1 `insert` (s2 `insert` freeVars e1 `union` freeVars e2)
-  freeVars (CElet s1 _ e1 e2 _)                     =
-    s1 `delete` (freeVars e1 `union` freeVars e2)
-  freeVars (CEmakeClj s1 clj e _)                   =
-    s1 `delete` (fromList (map fst $ actFvs clj) `union` freeVars e)
-  freeVars (CEappClj (s1, _) ss _)                  =
-    fromList $ s1 : map fst ss
-  freeVars (CEappDir _ ss _)                        =
-    fromList $ map fst ss
-  freeVars (CEpair (s1, _) (s2, _) _)               =
+  freeVars (CElet s1 t e1 e2 _)      =
+    (s1, t) `delete` (freeVars e1 `union` freeVars e2)
+  freeVars (CEmakeClj s1 clj e t)    =
+    (s1, t) `delete` (fromList (actFvs clj) `union` freeVars e)
+  freeVars (CEappClj s1 ss _)        =
+    fromList $ s1 : ss
+  freeVars (CEappDir _ ss _)         =
+    fromList ss
+  freeVars (CEpair s1 s2 _)          =
     fromList [s1, s2]
-  freeVars (CEcons (s1, _) (s2, _) _)               =
+  freeVars (CEcons s1 s2 _)          =
     fromList [s1, s2]
-  freeVars (CEletPair (s1, _) (s2, _) (s3, _) e _)  =
+  freeVars (CEletPair s1 s2 s3 e _)  =
     s3 `insert` freeVars e \\ fromList [s1, s2]
-  freeVars (CEletList (s1, _) (s2, _) (s3, _) e _)  =
+  freeVars (CEletList s1 s2 s3 e _)  =
     s3 `insert` freeVars e \\ fromList [s1, s2]
-  freeVars (CEhandle e1 e2 _)                       =
+  freeVars (CEhandle e1 e2 _)        =
     freeVars e1 `union` freeVars e2
-  freeVars (CEseq e1 e2 _)                          =
+  freeVars (CEseq e1 e2 _)           =
     freeVars e1 `union` freeVars e2
-  freeVars _                                        =
+  freeVars _                         =
     empty
 
   pprCExpr :: CExpr -> Iseq
