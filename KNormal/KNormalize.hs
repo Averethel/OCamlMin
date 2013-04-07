@@ -142,9 +142,9 @@ module KNormal.KNormalize (kNormalize) where
              m (KExpr, (String, Type), (String, Type))
   genVars n t = do
     let e' = KEextFunApp ("tag_of", Tfun [t] Tint) [(n, t)] Tint
-    v1  <- freshVar t
+    v1  <- freshVar Tint
     v2  <- freshVar Tint
-    return (e', (v1, t), (v2, Tint))
+    return (e', (v1, Tint), (v2, Tint))
 
   kNormalizeCaseList :: MonadState Counter m => String -> Type -> TypedExpr ->
                         String -> Type -> String -> Type -> TypedExpr ->
@@ -158,8 +158,8 @@ module KNormal.KNormalize (kNormalize) where
     return $
       KElet (v1, t1) e' (
         KElet v2 (KEint 0 Tint) (
-          KElet v2 (KEint 1 Tint) (
-            KEifEq (v1, t1) v2 en' (
+          KEifEq (v1, t1) v2 en' (
+            KElet (v3, t1) (KEint 1 Tint) (
               KEifEq (v1, t1) (v3, t1)
                 (KEletList (x, tx) (xs, txs) (n, t) ec' tp)
                 (KEerror matchFailure tp) tp
@@ -198,17 +198,17 @@ module KNormal.KNormalize (kNormalize) where
   kNormalizeCase [TCC { tccConstructor = (CNnil, _),
                        tccVariables   = [],
                        tccBody        = bn },
-                  TCC { tccConstructor = (CNcons, tl),
+                  TCC { tccConstructor = (CNcons, _),
                        tccVariables   = [(x, tx), (xs, txs)],
                        tccBody        = bc }]    n =
-    kNormalizeCaseList n tl bn x tx xs txs bc
-  kNormalizeCase [TCC { tccConstructor = (CNcons, tl),
+    kNormalizeCaseList n txs bn x tx xs txs bc
+  kNormalizeCase [TCC { tccConstructor = (CNcons, _),
                        tccVariables   = [(x, tx), (xs, txs)],
                        tccBody        = bc },
                   TCC { tccConstructor = (CNnil, _),
                        tccVariables   = [],
                        tccBody        = bn }]    n =
-    kNormalizeCaseList n tl bn x tx xs txs bc
+    kNormalizeCaseList n txs bn x tx xs txs bc
   ---- unit
   kNormalizeCase [TCC { tccConstructor = (CNunit, Tunit),
                        tccVariables   = [],
