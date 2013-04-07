@@ -269,9 +269,9 @@ module KNormal.KNormalize (kNormalize) where
     (as', lt) <- kNormalizeArgs as
     return $ lt $ KEapply (x, t) as' tp
   kNormalize (TEpair e1 e2 tp)                                          =
-    kNormalizeOp KEpair tp e1 e2
+    kNormalizeOp KEpair (Tfun [typeOfTypedExpr e1, typeOfTypedExpr e2] tp) e1 e2
   kNormalize (TEcons e1 e2 tp)                                          =
-    kNormalizeOp KEcons tp e1 e2
+    kNormalizeOp KEcons (Tfun [typeOfTypedExpr e1, typeOfTypedExpr e2] tp) e1 e2
   kNormalize (TEif (TEapply (TEuprim (UPnot, _)) [c1] _) e2 e3 tp)      =
     kNormalize (TEif c1 e3 e2 tp)
   kNormalize (TEif (TEapply (TEbprim (BPeq, _)) [c1, c2] _) e2 e3 tp)   = do
