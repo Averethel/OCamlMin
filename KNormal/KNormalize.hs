@@ -230,6 +230,10 @@ module KNormal.KNormalize (kNormalize) where
     -- Here should be checking for external references
     -- when modules are implemented
     return $ KEvar s t
+  kNormalize (TEfun fcs tp)                                             = do
+    l  <- freshLambda tp
+    fd <- mkFunDef l $ head fcs
+    return $ KEletRec fd (KEvar l tp) tp
   kNormalize (TElet (TPvar s _) (TEfun fcs _) e2 tp)                    = do
     fd  <- mkFunDef s $ head fcs
     e2' <- kNormalize e2
