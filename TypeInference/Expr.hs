@@ -3,7 +3,9 @@
   #-}
 
 module TypeInference.Expr (typeOfExpr) where
+  import Syntax.BinaryPrim
   import Syntax.Expr
+  import TypedSyntax.BinaryPrim
   import TypedSyntax.Expr
   import TypedSyntax.Pattern
   import Types
@@ -17,6 +19,8 @@ module TypeInference.Expr (typeOfExpr) where
   import TypeInference.Pattern
   import TypeInference.UnaryPrim
   import TypeInference.Unification
+
+  import Utils.Errors
 
   import Control.Monad.Error
   import Control.Monad.State hiding (get)
@@ -100,6 +104,17 @@ module TypeInference.Expr (typeOfExpr) where
     (t2, s2)       <- typeOfExpr (env `extend` (n, t1 `applySubst` s1
                                       `applySubst` s)) cns' e2
     return (TEletrec n t1 fcs' t2 $ typeOfTypedExpr t2, s2)
+  typeOfExpr env cns (Eapply (Ebprim BPeq) as) = do
+    tas    <- mapM (typeOfExpr env cns) as
+    s      <- unify cns
+    let ts  = map (`applySubstTE` s) $ fst $ unzip tas
+    case map typeOfTypedExpr ts of
+      [Tint, Tint]   -> return $ unifyEq ts Tint s
+      [Tbool, Tbool] -> return $ unifyEq ts Tbool s
+      l              -> throwError $ equalitySimple $ head l
+      where
+        unifyEq ts tp s =
+          (TEapply (TEbprim (BPeq, Tfun [tp, tp] Tbool)) ts Tbool, s)
   typeOfExpr env cns (Eapply e1 as)     = do
     (t1, s1) <- typeOfExpr env cns e1
     tas      <- mapM (typeOfExpr env cns) as

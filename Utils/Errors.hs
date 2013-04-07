@@ -2,7 +2,8 @@ module Utils.Errors (
   unboundVariable,
   overlappingIds,
   cannotUnify,
-  matchFailure
+  matchFailure,
+  equalitySimple
 ) where
 
   unboundVariable :: String -> String
@@ -16,3 +17,6 @@ module Utils.Errors (
 
   matchFailure :: String
   matchFailure = "Match failure"
+
+  equalitySimple :: Show a => a -> String
+  equalitySimple tp = "Equality is only allowed for simple types. " ++ show tp ++ " is not a simple type."
