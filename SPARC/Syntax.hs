@@ -1,5 +1,4 @@
 module SPARC.Syntax where
-
   data Label = L String deriving Eq
 
   instance Show Label where
@@ -38,31 +37,62 @@ module SPARC.Syntax where
     | IfSubD String String
     | IfMulD String String
     | IfDivD String String
+    | IfModD String String
     | IldDF String IdOrIimm
     | IstDF String String IdOrIimm
     | Icomment String
     -- virtual instructions
-    | IifEq String IdOrIimm Instr Instr
-    | IifLE String IdOrIimm Instr Instr
-    | IifGE String IdOrIimm Instr Instr
-    | IifFEq String String Instr Instr
-    | IifFLE String String Instr Instr
+    | IifEq String IdOrIimm Seq Seq
+    | IifLE String IdOrIimm Seq Seq
+    | IifGE String IdOrIimm Seq Seq
+    | IifFEq String String Seq Seq
+    | IifFLE String String Seq Seq
     -- closure address, integer arguments, and float arguments
     | IcallCls String [String] [String]
     | IcallDir Label [String] [String]
     | Isave String String
     | Irestore String
+    | Ijump Label
     deriving (Eq, Show)
 
   data FunDef = FD {
     name  :: Label,
     args  :: [String],
     fargs :: [String],
-    body  :: Seq,
+    body  :: Seq
   } deriving (Eq, Show)
 
   data Program = P {
-    funTable :: [(Label, Float)],
     toplevel :: [FunDef],
-    main     :: Instr
+    main     :: Seq
   } deriving (Eq, Show)
+
+  regs :: [String]
+  regs =
+    [ "%i2", "%i3", "%i4", "%i5",
+      "%l0", "%l1", "%l2", "%l3", "%l4", "%l5", "%l6", "%l7",
+      "%o0", "%o1", "%o2", "%o3", "%o4", "%o5" ]
+
+  -- closure address
+  regCl :: String
+  regCl = last regs
+
+  -- temporary for swap
+  regSw :: String
+  regSw = last . init $ regs
+
+  -- stack pointer
+  regSp :: String
+  regSp = "%i0"
+
+  -- heap pointer
+  regHp :: String
+  regHp = "%i1"
+
+  -- return address
+  regRa :: String
+  regRa = "%o7"
+
+  -- default staic failure label
+  failureLabel :: Label
+  failureLabel = L "_match_failure"

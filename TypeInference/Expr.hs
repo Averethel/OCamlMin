@@ -5,7 +5,6 @@
 module TypeInference.Expr (typeOfExpr) where
   import Syntax.BinaryPrim
   import Syntax.Expr
-  import TypedSyntax.BinaryPrim
   import TypedSyntax.Expr
   import TypedSyntax.Pattern
   import Types
