@@ -7,6 +7,7 @@ Changelog
 =========
 * 26 IV 2013
   * Initial version of virtual machine code generation
+  * 13-bit immidiate optimization
 * 7 IV 2013
   * Minor bugfixes in K-Normalization
   * Restricted equality to work only on primitive types
