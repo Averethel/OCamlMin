@@ -8,7 +8,7 @@ module VMCode.Generate where
   import VMCode.Counters
 
   import SPARC.Syntax
-  import SPARC.Utils
+  import SPARC.Utils hiding (freeVars)
 
   import Control.Exception.Base
   import Control.Monad.State
