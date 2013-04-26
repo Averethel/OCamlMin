@@ -5,6 +5,11 @@ Implementation of OCamlMin language based on min-caml project.
 
 Changelog
 =========
+* 26 IV 2013
+  * Initial version of virtual machine code generation
+* 7 IV 2013
+  * Minor bugfixes in K-Normalization
+  * Restricted equality to work only on primitive types
 * 31 III 2013
   * α-conversion on typed AST
   * β-reduction on typed AST
