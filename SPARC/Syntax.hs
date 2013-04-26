@@ -1,5 +1,4 @@
 module SPARC.Syntax where
-
   data Label = L String deriving Eq
 
   instance Show Label where
@@ -43,16 +42,17 @@ module SPARC.Syntax where
     | IstDF String String IdOrIimm
     | Icomment String
     -- virtual instructions
-    | IifEq String IdOrIimm Instr Instr
-    | IifLE String IdOrIimm Instr Instr
-    | IifGE String IdOrIimm Instr Instr
-    | IifFEq String String Instr Instr
-    | IifFLE String String Instr Instr
+    | IifEq String IdOrIimm Seq Seq
+    | IifLE String IdOrIimm Seq Seq
+    | IifGE String IdOrIimm Seq Seq
+    | IifFEq String String Seq Seq
+    | IifFLE String String Seq Seq
     -- closure address, integer arguments, and float arguments
     | IcallCls String [String] [String]
     | IcallDir Label [String] [String]
     | Isave String String
     | Irestore String
+    | Ijump Label
     deriving (Eq, Show)
 
   data FunDef = FD {
@@ -63,7 +63,6 @@ module SPARC.Syntax where
   } deriving (Eq, Show)
 
   data Program = P {
-    funTable :: [(Label, Float)],
     toplevel :: [FunDef],
-    main     :: Instr
+    main     :: Seq
   } deriving (Eq, Show)
