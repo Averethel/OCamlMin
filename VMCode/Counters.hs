@@ -4,6 +4,7 @@
 
 module VMCode.Counters where
   import SPARC.Syntax
+  import Types
 
   import Control.Monad.State
 
@@ -30,4 +31,4 @@ module VMCode.Counters where
   seq :: MonadState Counter m => Instr -> Seq -> m Seq
   seq i e = do
     idf <- nextId "tmp"
-    return $ Let idf i e
+    return $ Let idf Tunit i e
