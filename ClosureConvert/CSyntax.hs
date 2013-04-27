@@ -103,6 +103,33 @@ module ClosureConvert.CSyntax where
   freeVars _                         =
     empty
 
+  typeOfCExpr :: CExpr -> Type
+  typeOfCExpr (CEunit t)            = t
+  typeOfCExpr (CEnil t)             = t
+  typeOfCExpr (CEint _ t)           = t
+  typeOfCExpr (CEneg _ t)           = t
+  typeOfCExpr (CEload _ t)          = t
+  typeOfCExpr (CEadd _ _ t)         = t
+  typeOfCExpr (CEsub _ _ t)         = t
+  typeOfCExpr (CEmult _ _ t)        = t
+  typeOfCExpr (CEdiv _ _ t)         = t
+  typeOfCExpr (CEmod _ _ t)         = t
+  typeOfCExpr (CEstore _ _ t)       = t
+  typeOfCExpr (CEvar _ t)           = t
+  typeOfCExpr (CEerror _ t)         = t
+  typeOfCExpr (CEifEq _ _ _ _ t)    = t
+  typeOfCExpr (CEifLE _ _ _ _ t)    = t
+  typeOfCExpr (CElet _ _ _ _ t)     = t
+  typeOfCExpr (CEmakeClj _ _ _ t)   = t
+  typeOfCExpr (CEappClj _ _ t)      = t
+  typeOfCExpr (CEappDir _ _ t)      = t
+  typeOfCExpr (CEpair _ _ t)        = t
+  typeOfCExpr (CEcons _ _ t)        = t
+  typeOfCExpr (CEletPair _ _ _ _ t) = t
+  typeOfCExpr (CEletList _ _ _ _ t) = t
+  typeOfCExpr (CEhandle _ _ t)      = t
+  typeOfCExpr (CEseq _ _ t)         = t
+
   pprCExpr :: CExpr -> Iseq
   pprCExpr (CEunit t)                                 =
     iStr "() : " `iAppend` pprType t
