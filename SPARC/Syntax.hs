@@ -1,4 +1,6 @@
 module SPARC.Syntax where
+  import Types
+
   data Label = L String deriving Eq
 
   instance Show Label where
@@ -16,7 +18,7 @@ module SPARC.Syntax where
   -- Instruction sequence
   data Seq =
       Ans Instr
-    | Let String Instr Seq
+    | Let String Type Instr Seq
     deriving (Eq, Show)
 
   -- SPARC assembly instructions
