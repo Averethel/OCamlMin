@@ -48,15 +48,15 @@ module VMCode.Generate where
               (String, Type) -> (String, Type) -> (String, Type) -> CExpr ->
               m Seq
   letBlock l s1 s2 s3 e = do
-    t <- nextId "t"
+    tg <- nextId "t"
     let fvs = freeVars e
     e' <- translateExpr l e
-    (_, load) <- expand [(t, Tint), s1, s2] (0, e')
-          (\x _ offset load ->
+    (_, load) <- expand [(tg, Tint), s1, s2] (0, e')
+          (\x t offset load ->
             return $
               if   not (S.member x $ S.map fst fvs)
               then load
-              else Let x (Ild (fst s3) (C offset)) load)
+              else Let x t (Ild (fst s3) (C offset)) load)
     return load
 
   translateExpr :: (MonadState Counter m) =>
@@ -75,8 +75,8 @@ module VMCode.Generate where
       _     -> do
         offset <- nextId "o"
         addr   <- nextId "addr"
-        return $ Let addr (Iset 0) $
-          Let offset (ISLL addr $ C 2) $
+        return $ Let addr Tint (Iset 0) $
+          Let offset Tint (ISLL addr $ C 2) $
             Ans $ Ild (fst s) $ V offset
   translateExpr _ (CEadd (s1, _) (s2, _) _) =
     return $ Ans $ Iadd s1 $ V s2
@@ -94,8 +94,8 @@ module VMCode.Generate where
       _     -> do
         offset <- nextId "o"
         addr   <- nextId "addr"
-        return $ Let addr (Iset 0) $
-          Let offset (ISLL addr $ C 2) $
+        return $ Let addr Tint (Iset 0) $
+          Let offset Tint (ISLL addr $ C 2) $
             Ans $ Ist (fst s2) s1 $ V offset
   translateExpr _ (CEvar _ Tunit) =
     return $ Ans Inop
@@ -112,39 +112,39 @@ module VMCode.Generate where
     e1' <- translateExpr l e1
     e2' <- translateExpr l e2
     return $ Ans $ IifLE s1 (V s2) e1' e2'
-  translateExpr l (CElet s _ e1 e2 _) = do
+  translateExpr l (CElet s t e1 e2 _) = do
     e1' <- translateExpr l e1
     e2' <- translateExpr l e2
-    return $ SPARC.Utils.concat e1' s e2'
-  translateExpr l (CEmakeClj s cl e _)      = do
+    return $ SPARC.Utils.concat e1' s t e2'
+  translateExpr l (CEmakeClj s cl e t)      = do
     e' <- translateExpr l e
     let f y _ off = VMCode.Counters.seq (Ist y s $ C off)
     (offset, storeFv) <- expand (actFvs cl) (4, e') f
     z  <- nextId "c"
     sq <- VMCode.Counters.seq (Ist z s $ C 0) storeFv
-    return $ Let s (Imov regHp) $
-        Let regHp (Iadd regHp $ C $ align offset) $
-          Let z (IsetL $ toLabel $ entry cl) sq
+    return $ Let s t (Imov regHp) $
+        Let regHp Tint (Iadd regHp $ C $ align offset) $
+          Let z Tint (IsetL $ toLabel $ entry cl) sq
   translateExpr _ (CEappClj s ss _)         =
     return $ Ans $ IcallCls (fst s) (map fst ss) [] -- no floats at the moment
   translateExpr _ (CEappDir l ss _)         =
     return $ Ans $ IcallDir (toLabel l) (map fst ss) [] -- no floats at the moment
-  translateExpr _ (CEpair s1 s2 _)          = do
-    t <- nextId "t"
-    y <- nextId "p"
+  translateExpr _ (CEpair s1 s2 t)          = do
+    tg <- nextId "t"
+    y  <- nextId "p"
     let f x _ off = VMCode.Counters.seq (Ist x y $ C off)
-    (offset, store) <- expand [(t, Tint), s1, s2] (0, Ans $ Imov y) f
-    return $ Let t (Iset pairHeader) $
-      Let y (Imov regHp) $
-        Let regHp (Iadd regHp $ C $ align offset) store
-  translateExpr _ (CEcons s1 s2 _)          = do
-    t <- nextId "t"
-    y <- nextId "l"
+    (offset, store) <- expand [(tg, Tint), s1, s2] (0, Ans $ Imov y) f
+    return $ Let tg Tint (Iset pairHeader) $
+      Let y t (Imov regHp) $
+        Let regHp Tint (Iadd regHp $ C $ align offset) store
+  translateExpr _ (CEcons s1 s2 t)          = do
+    tg <- nextId "t"
+    y  <- nextId "l"
     let f x _ off = VMCode.Counters.seq (Ist x y $ C off)
-    (offset, store) <- expand [(t, Tint), s1, s2] (0, Ans $ Imov y) f
-    return $ Let t (Iset listHeader) $
-      Let y (Imov regHp) $
-        Let regHp (Iadd regHp $ C $ align offset) store
+    (offset, store) <- expand [(tg, Tint), s1, s2] (0, Ans $ Imov y) f
+    return $ Let tg Tint (Iset listHeader) $
+      Let y t (Imov regHp) $
+        Let regHp Tint (Iadd regHp $ C $ align offset) store
   translateExpr l (CEletPair s1 s2 s3 e _)  =
     letBlock l s1 s2 s3 e
   translateExpr l (CEletList s1 s2 s3 e _)  =
@@ -154,12 +154,12 @@ module VMCode.Generate where
     e1' <- translateExpr exl e1
     e2' <- translateExpr l e2
     idt <- nextId "exc"
-    return $ SPARC.Utils.concat e1' idt e2'
+    return $ SPARC.Utils.concat e1' idt (typeOfCExpr e1) e2'
   translateExpr l (CEseq e1 e2 _)           = do
     e1' <- translateExpr l e1
     e2' <- translateExpr l e2
     idt <- nextId "seq"
-    return $  SPARC.Utils.concat e1' idt e2'
+    return $  SPARC.Utils.concat e1' idt (typeOfCExpr e1) e2'
   translateExpr l e =
     assert False $ translateExpr l e
 
@@ -171,7 +171,7 @@ module VMCode.Generate where
     (_, load) <- expand
       (formalFvs fd)
       (4, e')
-      (\z _ offset load -> return $ Let z (Ild regCl $ C offset) load)
+      (\z t offset load -> return $ Let z t (Ild regCl $ C offset) load)
     return SPARC.Syntax.FD {
       SPARC.Syntax.name  = toLabel . ClosureConvert.CSyntax.name $ fd,
       SPARC.Syntax.args  = map fst $ ClosureConvert.CSyntax.args fd,

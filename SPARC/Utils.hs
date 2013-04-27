@@ -1,11 +1,12 @@
 module SPARC.Utils where
   import SPARC.Syntax
+  import Types
 
   import Data.Set
 
-  concat :: Seq -> String -> Seq -> Seq
-  concat (Ans e1)     x e2 = Let x e1 e2
-  concat (Let y e e1) x e2 = Let y e $ SPARC.Utils.concat e1 x e2
+  concat :: Seq -> String  -> Type -> Seq -> Seq
+  concat (Ans e1)       x tx e2 = Let x tx e1 e2
+  concat (Let y t e e1) x tx e2 = Let y t e $ SPARC.Utils.concat e1 x tx e2
 
   align :: Integer -> Integer
   align i
@@ -50,8 +51,8 @@ module SPARC.Utils where
   fvInstr _                   = []
 
   fvSeq :: Seq -> [String]
-  fvSeq (Ans i)     = fvInstr i
-  fvSeq (Let x i e) = fvInstr i ++ removeAndUniq (singleton x) (fvSeq e)
+  fvSeq (Ans i)       = fvInstr i
+  fvSeq (Let x _ i e) = fvInstr i ++ removeAndUniq (singleton x) (fvSeq e)
 
   freeVars :: Seq -> [String]
   freeVars sq = removeAndUniq empty $ fvSeq sq
