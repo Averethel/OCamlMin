@@ -20,24 +20,24 @@ module Immidiate (optimizeProgram) where
   optimizeSeq env (Ans i)    = do
     i' <- optimizeInstr env i
     return $ Ans i'
-  optimizeSeq env (Let x (Iset n) e)
+  optimizeSeq env (Let x t (Iset n) e)
     | -4096 <= n && n < 4096 = do
       putStrLn $ "found simm13 " ++ show x ++ " = " ++ show n ++ "."
       e' <- optimizeSeq ((x, n):env) e
       if x `elem` freeVars e'
-      then return $ Let x (Iset n) e'
+      then return $ Let x t (Iset n) e'
       else do
         putStrLn $ "erased redundant Set to " ++ show x
         return e'
-  optimizeSeq env (Let x (ISLL y (C i)) e)
+  optimizeSeq env (Let x t (ISLL y (C i)) e)
     | y `member` env         = do
       putStrLn $ "erased redundant SLL on " ++ show x
       optimizeSeq env $
-        Let x (Iset $ y `find` env `shift` fromInteger i) e
-  optimizeSeq env (Let x i e) = do
+        Let x t (Iset $ y `find` env `shift` fromInteger i) e
+  optimizeSeq env (Let x t i e) = do
     e' <- optimizeSeq env e
     i' <- optimizeInstr env i
-    return $ Let x i' e'
+    return $ Let x t i' e'
 
   optimizeInstr :: Env -> Instr -> IO Instr
   optimizeInstr env (Iadd x (V y))
