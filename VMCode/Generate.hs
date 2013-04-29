@@ -158,8 +158,7 @@ module VMCode.Generate where
   translateExpr l (CEseq e1 e2 _)           = do
     e1' <- translateExpr l e1
     e2' <- translateExpr l e2
-    idt <- nextId "seq"
-    return $  SPARC.Utils.concat e1' idt (typeOfCExpr e1) e2'
+    return $  Seq e1' e2'
   translateExpr l e =
     assert False $ translateExpr l e
 
