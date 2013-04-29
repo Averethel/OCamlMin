@@ -9,8 +9,8 @@ module VMCode.Counters where
   import Control.Monad.State
 
   data Counter = Cs {
-    exceptionLabel :: Integer,
     identifier :: Integer
+    errorLabel   :: Integer,
   }
 
   emptyState :: Counter
@@ -22,11 +22,11 @@ module VMCode.Counters where
     put st{ identifier = identifier st + 1 }
     return $ '_' : s ++ '_' : show (identifier st)
 
-  nextExceptionLabel :: MonadState Counter m => m SPARC.Syntax.Label
-  nextExceptionLabel = do
+  nextErrorLabel :: MonadState Counter m => m Label
+  nextErrorLabel = do
     st <- get
-    put st{ exceptionLabel = exceptionLabel st + 1 }
-    return $ SPARC.Syntax.L $ "exception_" ++ show (exceptionLabel st)
+    put st{ errorLabel = errorLabel st + 1 }
+    return $ L $ "_error_" ++ show (errorLabel st)
 
   seq :: MonadState Counter m => Instr -> Seq -> m Seq
   seq i e = do
