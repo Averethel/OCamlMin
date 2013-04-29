@@ -38,6 +38,13 @@ module Immidiate (optimizeProgram) where
     e' <- optimizeSeq env e
     i' <- optimizeInstr env i
     return $ Let x t i' e'
+  optimizeSeq env (Seq e1 e2) = do
+    e1' <- optimizeSeq env e1
+    e2' <- optimizeSeq env e2
+    return $ Seq e1' e2'
+  optimizeSeq env (Labeled l e) = do
+    e' <- optimizeSeq env e
+    return $ Labeled l e'
 
   optimizeInstr :: Env -> Instr -> IO Instr
   optimizeInstr env (Iadd x (V y))
