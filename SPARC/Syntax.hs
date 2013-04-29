@@ -19,6 +19,8 @@ module SPARC.Syntax where
   data Seq =
       Ans Instr
     | Let String Type Instr Seq
+    | Seq Seq Seq
+    | Labeled Label Seq
     deriving (Eq, Show)
 
   -- SPARC assembly instructions

@@ -7,6 +7,8 @@ module SPARC.Utils where
   concat :: Seq -> String  -> Type -> Seq -> Seq
   concat (Ans e1)       x tx e2 = Let x tx e1 e2
   concat (Let y t e e1) x tx e2 = Let y t e $ SPARC.Utils.concat e1 x tx e2
+  concat (Seq e1 e2)    x tx e3 = Seq e1 $ SPARC.Utils.concat e2 x tx e3
+  concat (Labeled l e1) x tx e2 = Labeled l $ SPARC.Utils.concat e1 x tx e2
 
   align :: Integer -> Integer
   align i
@@ -53,6 +55,8 @@ module SPARC.Utils where
   fvSeq :: Seq -> [String]
   fvSeq (Ans i)       = fvInstr i
   fvSeq (Let x _ i e) = fvInstr i ++ removeAndUniq (singleton x) (fvSeq e)
+  fvSeq (Seq e1 e2)   = fvSeq e1 ++ fvSeq e2
+  fvSeq (Labeled _ e) = fvSeq e
 
   freeVars :: Seq -> [String]
   freeVars sq = removeAndUniq empty $ fvSeq sq
