@@ -5,6 +5,8 @@ Implementation of OCamlMin language based on min-caml project.
 
 Changelog
 =========
+* 3 V 2013
+  * Initial version of register allocation
 * 26 IV 2013
   * Initial version of virtual machine code generation
   * 13-bit immidiate optimization
