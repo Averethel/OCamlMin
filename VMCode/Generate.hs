@@ -171,11 +171,13 @@ module VMCode.Generate where
       (formalFvs fd)
       (4, e')
       (\z t offset load -> return $ Let z t (Ild regCl $ C offset) load)
+    let Tfun _ t2 = snd . ClosureConvert.CSyntax.name $ fd
     return SPARC.Syntax.FD {
       SPARC.Syntax.name  = toLabel . ClosureConvert.CSyntax.name $ fd,
       SPARC.Syntax.args  = map fst $ ClosureConvert.CSyntax.args fd,
       SPARC.Syntax.fargs = [], -- no floats at the moment
-      SPARC.Syntax.body  = load
+      SPARC.Syntax.body  = load,
+      SPARC.Syntax.ret   = t2
     }
 
   translateProgram :: (MonadState Counter m) =>

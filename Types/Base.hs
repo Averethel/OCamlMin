@@ -5,6 +5,7 @@ module Types.Base where
 
   data Type =
       Tint
+    | Tfloat
     | Tbool
     | Tunit
     | Tvar    String
@@ -16,6 +17,7 @@ module Types.Base where
 
   genId :: Type -> String
   genId Tint          = "i"
+  genId Tfloat        = "f"
   genId Tbool         = "b"
   genId Tunit         = "u"
   genId (Tvar v)      = "fv_" ++ v
@@ -38,6 +40,7 @@ module Types.Base where
 
   pprType :: Type -> Iseq
   pprType Tint          = iStr "int"
+  pprType Tfloat        = iStr "float"
   pprType Tbool         = iStr "bool"
   pprType Tunit         = iStr "unit"
   pprType (Tvar v)      = iStr v

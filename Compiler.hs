@@ -9,6 +9,7 @@ module Compiler (compile) where
   import KNormal
   import LetFlatten
   import PatternMatching
+  import RegAlloc
   import qualified SPARC.Syntax as S
   import Syntax
   import TypedSyntax
@@ -27,7 +28,8 @@ module Compiler (compile) where
     e8     <- eliminateDefinitions e7
     e9     <- closureConvert e8
     let e10 = generateVMCode e9
-    optimizeProgram e10
+    e11    <- optimizeProgram e10
+    regAllocProgram e11
 
   compile :: Integer -> Expr -> IO (Either String S.Program)
   compile inlineTreshold expr = case typeOfExpression emptyEnv expr of

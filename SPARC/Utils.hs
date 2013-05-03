@@ -60,3 +60,7 @@ module SPARC.Utils where
 
   freeVars :: Seq -> [String]
   freeVars sq = removeAndUniq empty $ fvSeq sq
+
+  isReg :: String -> Bool
+  isReg ('%':_) = True
+  isReg _       = False
