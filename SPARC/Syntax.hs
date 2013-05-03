@@ -63,7 +63,8 @@ module SPARC.Syntax where
     name  :: Label,
     args  :: [String],
     fargs :: [String],
-    body  :: Seq
+    body  :: Seq,
+    ret   :: Type
   } deriving (Eq, Show)
 
   data Program = P {
