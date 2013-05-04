@@ -1,4 +1,8 @@
-module Compiler (compile) where
+{-# LANGUAGE
+  FlexibleContexts
+  #-}
+
+module Compiler where
   import AlphaConvert
   import BetaReduce
   import ClosureConvert
@@ -16,24 +20,31 @@ module Compiler (compile) where
   import TypeInference
   import VMCode
 
-  compiler :: Integer -> TypedExpr -> IO S.Program
+  import Counters
+  import Control.Monad.State
+
+  compiler :: (MonadIO m, MonadState Counter m) =>
+              Integer -> TypedExpr -> m S.Program
   compiler t e0 = do
-    let e1  = compilePatternMatching e0
-    let e2  = convertToKNormal e1
-    let e3  = alphaConvert e2
-    e4     <- betaReduce e3
+    e1     <- compilePatternMatching e0
+    e2     <- convertToKNormal e1
+    e3     <- alphaConvert e2
+    e4     <- liftIO $ betaReduce e3
     let e5  = letFlatten e4
     e6     <- inline t e5
     let e7  = constantsFold e6
-    e8     <- eliminateDefinitions e7
-    e9     <- closureConvert e8
-    let e10 = generateVMCode e9
-    e11    <- optimizeProgram e10
-    regAllocProgram e11
+    e8     <- liftIO $ eliminateDefinitions e7
+    e9     <- liftIO $ closureConvert e8
+    e10    <- generateVMCode e9
+    e11    <- liftIO $ optimizeProgram e10
+    liftIO $ regAllocProgram e11
 
-  compile :: Integer -> Expr -> IO (Either String S.Program)
-  compile inlineTreshold expr = case typeOfExpression emptyEnv expr of
-    Left er -> return $ Left er
-    Right t -> do
-      c <- compiler inlineTreshold t
-      return $ Right c
+  compile :: (MonadIO m, MonadState Counter m) =>
+             Integer -> Expr -> m (Either String S.Program)
+  compile inlineTreshold expr = do
+    tp <- typeOfExpression emptyEnv expr
+    case tp of
+      Left er -> return $ Left er
+      Right t -> do
+        c <- compiler inlineTreshold t
+        return $ Right c
