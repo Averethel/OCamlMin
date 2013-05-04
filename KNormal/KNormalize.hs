@@ -3,9 +3,9 @@
   #-}
 
 module KNormal.KNormalize (kNormalize) where
-  import KNormal.Counter
   import KNormal.KSyntax
 
+  import Counters
   import Syntax
   import TypedSyntax
   import Types
@@ -20,7 +20,7 @@ module KNormal.KNormalize (kNormalize) where
   insertLet (KEvar x t) k = k x t
   insertLet e           k = do
     let t = typeOfKExpr e
-    x  <- freshVar t
+    x  <- freshKVar t
     e' <- k x t
     return $ KElet (x, t) e e' $ typeOfKExpr e'
 
@@ -90,14 +90,14 @@ module KNormal.KNormalize (kNormalize) where
     e1' <- kNormalize e1
     insertLet e1' (\x t-> do {
       e2' <- kNormalize e2;
-      v   <- freshVar Tint;
+      v   <- freshKVar Tint;
       return $ KElet (v, Tint) (KEint 1 Tint)
                (KEifEq (x, t) (v, Tint)  (KEint 1 Tint) e2' Tint) Tint })
   kNormalizeBPrim (BPand, _)    e1 e2  = do
     e1' <- kNormalize e1
     insertLet e1' (\x t -> do {
       e2' <- kNormalize e2;
-      v   <- freshVar Tint;
+      v   <- freshKVar Tint;
       return $ KElet (v, Tint) (KEint 1 Tint)
                 (KEifEq (x, t) (v, Tint) e2' (KEint 0 Tint) Tint) Tint })
   kNormalizeBPrim (BPadd, t)    e1 e2  =
@@ -123,7 +123,7 @@ module KNormal.KNormalize (kNormalize) where
       KEvar x t -> return ((x, t):as', f)
       _       -> do
         let t = typeOfKExpr a'
-        v <- freshVar t
+        v <- freshKVar t
         return ((v, t):as', \e -> let e' = (f e) in
           KElet (v, t) a' e' $ typeOfKExpr e')
 
@@ -131,7 +131,7 @@ module KNormal.KNormalize (kNormalize) where
   kNormalizeCaseBool :: MonadState Counter m =>
                         String -> TypedExpr -> TypedExpr -> m KExpr
   kNormalizeCaseBool n et ef = do
-    v   <- freshVar Tbool
+    v   <- freshKVar Tbool
     et' <- kNormalize et
     ef' <- kNormalize ef
     let t' = typeOfKExpr et'
@@ -142,8 +142,8 @@ module KNormal.KNormalize (kNormalize) where
              m (KExpr, (String, Type), (String, Type))
   genVars n t = do
     let e' = KEextFunApp ("tag_of", Tfun [t] Tint) [(n, t)] Tint
-    v1  <- freshVar Tint
-    v2  <- freshVar Tint
+    v1  <- freshKVar Tint
+    v2  <- freshKVar Tint
     return (e', (v1, Tint), (v2, Tint))
 
   kNormalizeCaseList :: MonadState Counter m => String -> Type -> TypedExpr ->
@@ -151,7 +151,7 @@ module KNormal.KNormalize (kNormalize) where
                         m KExpr
   kNormalizeCaseList n t en x tx xs txs ec = do
     (e', (v1, t1), v2) <- genVars n t
-    v3  <- freshVar t1
+    v3  <- freshKVar t1
     en' <- kNormalize en
     ec' <- kNormalize ec
     let tp = typeOfKExpr ec'
@@ -293,7 +293,7 @@ module KNormal.KNormalize (kNormalize) where
   kNormalize (TEif e1 e2 e3 tp)                                         = do
     e1' <- kNormalize e1
     insertLet e1' (\x t -> do {
-      y   <- freshVar Tint;
+      y   <- freshKVar Tint;
       e2' <- kNormalize e2;
       e3' <- kNormalize e3;
       return $ KElet (y, Tint) (KEint 1 Tint)

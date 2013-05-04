@@ -1,8 +1,12 @@
+{-# LANGUAGE
+  FlexibleContexts
+  #-}
+
 module KNormal (
   convertToKNormal,
   KExpr(..)
 ) where
-  import KNormal.Counter
+  import Counters
   import KNormal.KNormalize
   import KNormal.KSyntax
 
@@ -10,5 +14,5 @@ module KNormal (
 
   import Control.Monad.State
 
-  convertToKNormal :: TypedExpr -> KExpr
-  convertToKNormal e = fst $ runState (kNormalize e) emptyState
+  convertToKNormal :: MonadState Counter m => TypedExpr -> m KExpr
+  convertToKNormal = kNormalize
