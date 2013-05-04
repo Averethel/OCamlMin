@@ -1,7 +1,13 @@
+{-# LANGUAGE
+  FlexibleContexts
+  #-}
+
 module SPARC.Utils where
+  import Counters
   import SPARC.Syntax
   import Types
 
+  import Control.Monad.State
   import Data.Set
 
   concat :: Seq -> String  -> Type -> Seq -> Seq
@@ -9,6 +15,11 @@ module SPARC.Utils where
   concat (Let y t e e1) x tx e2 = Let y t e $ SPARC.Utils.concat e1 x tx e2
   concat (Seq e1 e2)    x tx e3 = Seq e1 $ SPARC.Utils.concat e2 x tx e3
   concat (Labeled l e1) x tx e2 = Labeled l $ SPARC.Utils.concat e1 x tx e2
+
+  instrSeq :: MonadState Counter m => Instr -> Seq -> m Seq
+  instrSeq i e = do
+    idf <- freshName $ genId Tunit
+    return $ Let idf Tunit i e
 
   align :: Integer -> Integer
   align i

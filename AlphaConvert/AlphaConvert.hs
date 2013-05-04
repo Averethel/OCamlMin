@@ -4,10 +4,9 @@
 
 module AlphaConvert.AlphaConvert (alphaConvert) where
   import AlphaConvert.Env
-  import AlphaConvert.Counter
-
   import KNormal.KSyntax
 
+  import Counters
   import Types
 
   import Control.Arrow
@@ -18,8 +17,8 @@ module AlphaConvert.AlphaConvert (alphaConvert) where
                 Type -> KExpr) -> (String, Type) -> (String, Type) ->
                 (String, Type) -> KExpr -> Type -> m KExpr
   convertLet env letC (s1, t1) (s2, t2) (s3, t3) e t = do
-    x1' <- freshVar s1
-    x2' <- freshVar s2
+    x1' <- freshName s1
+    x2' <- freshName s2
     e'  <- alphaConvert (extend (extend env s1 x1') s2 x2') e
     return $ letC (x1', t1) (x2', t2) (env `find` s3, t3) e' t
 
@@ -51,13 +50,13 @@ module AlphaConvert.AlphaConvert (alphaConvert) where
     e2' <- alphaConvert env e2
     return $ KEifLE (env `find` s1, t1) (env `find` s2, t2) e1' e2' t3
   alphaConvert env (KElet (s, t1) e1 e2 t2)               = do
-    x'  <- freshVar s
+    x'  <- freshName s
     e1' <- alphaConvert env e1
     e2' <- alphaConvert (extend env s x') e2
     return $ KElet (x', t1) e1' e2' t2
   alphaConvert env (KEletRec fd e t)                      = do
-    x'  <- freshVar . fst . name $ fd
-    mps <- mapM (\(x, _) -> do { i <- freshVar x; return (x, i) }) $ args fd
+    x'  <- freshName . fst . name $ fd
+    mps <- mapM (\(x, _) -> do { i <- freshName x; return (x, i) }) $ args fd
     let env'  = extend env (fst . name $ fd) x'
     let env'' = addList env' mps
     b'  <- alphaConvert env'' $ body fd

@@ -3,9 +3,8 @@
   #-}
 
 module PatternMatching.NameWildcards (nameWildcards) where
+  import Counters
   import TypedSyntax
-
-  import PatternMatching.Counters
 
   import Control.Monad.State
 

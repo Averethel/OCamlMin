@@ -3,6 +3,7 @@
   #-}
 
 module TypeInference.Pattern (typeAndBindingsOfPattern) where
+  import Counters
   import Syntax.Pattern
   import TypedSyntax.Pattern
   import Types
@@ -10,7 +11,6 @@ module TypeInference.Pattern (typeAndBindingsOfPattern) where
 
   import TypeInference.Constant
   import TypeInference.Constraints
-  import TypeInference.Counter
   import TypeInference.Env
 
   import Control.Monad.Error
@@ -43,10 +43,10 @@ module TypeInference.Pattern (typeAndBindingsOfPattern) where
                                     Pattern ->
                                     m (TypedPattern, Env, Constraints)
       typeAndBindingsOfPattern' Pwildcard     = do
-        v <- freshVar
+        v <- freshTypeVar
         return (TPwildcard v, emptyEnv, emptyConstraints)
       typeAndBindingsOfPattern' (Pvar n)      = do
-        v <- freshVar
+        v <- freshTypeVar
         return (TPvar n v, emptyEnv `extend` (n, v), emptyConstraints)
       typeAndBindingsOfPattern' (Pconst c)    = do
         tc <- typeOfConstant c

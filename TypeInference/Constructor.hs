@@ -3,11 +3,11 @@
   #-}
 
 module TypeInference.Constructor where
+  import Counters
   import Syntax.Constructor
   import TypedSyntax.Constructor
   import Types
 
-  import TypeInference.Counter
   import TypeInference.Env
 
   import Control.Exception.Base
@@ -18,14 +18,14 @@ module TypeInference.Constructor where
                                   Constructor -> [String] ->
                                   m (TypedConstructor, Env)
   typeAndBindingsOfConstructor CNnil   []     = do
-    v <- freshVar
+    v <- freshTypeVar
     return ((CNnil, Tlist v), [])
   typeAndBindingsOfConstructor CNcons  [h, t] = do
-    v <- freshVar
+    v <- freshTypeVar
     return ((CNcons, Tfun [v, Tlist v] $ Tlist v), [(h, v), (t, Tlist v)])
   typeAndBindingsOfConstructor CNpair  [x, y] = do
-    v1 <- freshVar
-    v2 <- freshVar
+    v1 <- freshTypeVar
+    v2 <- freshTypeVar
     return ((CNpair, Tfun [v1, v2] $ Tpair v1 v2), [(x, v1), (y, v2)])
   typeAndBindingsOfConstructor CNtrue  []     =
     return ((CNtrue, Tbool), [])

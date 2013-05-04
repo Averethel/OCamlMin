@@ -1,11 +1,19 @@
+{-# LANGUAGE
+  FlexibleContexts
+  #-}
+
 module Inline.Inline where
   import Inline.Env
   import Inline.Size
 
   import KNormal.KSyntax
   import AlphaConvert
+  import Counters
 
-  inline :: Env -> Integer -> KExpr -> IO KExpr
+  import Control.Monad.State
+
+  inline :: (MonadIO m, MonadState Counter m) =>
+            Env -> Integer -> KExpr -> m KExpr
   inline env trs (KEifEq s1 s2 e1 e2 t)   = do
     e1' <- inline env trs e1
     e2' <- inline env trs e2
@@ -28,9 +36,10 @@ module Inline.Inline where
         | otherwise            = env `extend` fd
   inline env trs (KEapply (s, _) ss _)
     | s `member` env                      = do
-      putStrLn $ "Inlining " ++ show s ++ "."
+      liftIO $ putStrLn $ "Inlining " ++ show s ++ "."
       let (fas, b) = env `find` s
-      inline env trs $ alphaConvertWithEnv (zip fas $ map fst ss) b
+      e' <- alphaConvertWithEnv (zip fas $ map fst ss) b
+      inline env trs e'
   inline env trs (KEletPair s1 s2 s3 e t) = do
     e' <- inline env trs e
     return $ KEletPair s1 s2 s3 e' t

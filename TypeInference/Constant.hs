@@ -3,10 +3,9 @@
   #-}
 
 module TypeInference.Constant where
+  import Counters
   import Syntax.Constant
   import Types
-
-  import TypeInference.Counter
 
   import Control.Monad.State
 
@@ -14,6 +13,6 @@ module TypeInference.Constant where
   typeOfConstant (Cint _)   = return Tint
   typeOfConstant (Cbool _)  = return Tbool
   typeOfConstant Cnil       = do
-    v <- freshVar
+    v <- freshTypeVar
     return $ Tlist v
   typeOfConstant Cunit      = return Tunit

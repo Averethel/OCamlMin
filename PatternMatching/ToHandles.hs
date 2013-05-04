@@ -3,10 +3,9 @@
   #-}
 
 module PatternMatching.ToHandles where
+  import Counters
   import TypedSyntax.Expr
   import TypedSyntax.Pattern
-
-  import PatternMatching.Counters
 
   import Control.Monad.State
 
