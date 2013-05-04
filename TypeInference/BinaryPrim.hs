@@ -3,16 +3,15 @@
   #-}
 
 module TypeInference.BinaryPrim where
+  import Counters
   import Syntax.BinaryPrim
   import Types
-
-  import TypeInference.Counter
 
   import Control.Monad.State
 
   typeOfBinaryPrim :: MonadState Counter m => BinaryPrim -> m Type
   typeOfBinaryPrim BPeq     = do
-    v <- freshVar
+    v <- freshTypeVar
     return $ Tfun [v, v] Tbool
   typeOfBinaryPrim BPlt     = return $ Tfun [Tint, Tint] Tbool
   typeOfBinaryPrim BPgt     = return $ Tfun [Tint, Tint] Tbool
@@ -24,5 +23,5 @@ module TypeInference.BinaryPrim where
   typeOfBinaryPrim BPdiv    = return $ Tfun [Tint, Tint] Tint
   typeOfBinaryPrim BPmod    = return $ Tfun [Tint, Tint] Tint
   typeOfBinaryPrim BPassign = do
-    v <- freshVar
+    v <- freshTypeVar
     return $ Tfun [Tref v, v] Tunit

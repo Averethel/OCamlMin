@@ -3,6 +3,7 @@
   #-}
 
 module TypeInference.Expr (typeOfExpr) where
+  import Counters
   import Syntax.BinaryPrim
   import Syntax.Expr
   import TypedSyntax.Expr
@@ -13,7 +14,6 @@ module TypeInference.Expr (typeOfExpr) where
   import TypeInference.Constant
   import TypeInference.Constraints
   import TypeInference.Constructor
-  import TypeInference.Counter
   import TypeInference.Env
   import TypeInference.Pattern
   import TypeInference.UnaryPrim
@@ -96,7 +96,7 @@ module TypeInference.Expr (typeOfExpr) where
     (t2, s2) <- typeOfExpr env' cns' e2
     return (TElet tp t1 t2 $ typeOfTypedExpr t2, s2)
   typeOfExpr env cns (Eletrec n fcs e2) = do
-    v              <- freshVar
+    v              <- freshTypeVar
     (fcs', t1, s1) <- typeOfFunction (env `extend` (n, v)) cns fcs
     let cns'        = singleConstraint v t1 `addConstraints` cns
     s              <- unify cns'
@@ -118,7 +118,7 @@ module TypeInference.Expr (typeOfExpr) where
     (t1, s1) <- typeOfExpr env cns e1
     tas      <- mapM (typeOfExpr env cns) as
     let (ts, _) = unzip tas
-    v        <- freshVar
+    v        <- freshTypeVar
     s        <- unify $ singleConstraint (typeOfTypedExpr t1)
                         (Tfun (map typeOfTypedExpr ts) v) `addConstraints` cns
     let e1' = t1 `applySubstTE` s `applySubstTE` s1
@@ -179,6 +179,6 @@ module TypeInference.Expr (typeOfExpr) where
     let e2' = t2 `applySubstTE` s
     return (TEhandle e1' e2' $ typeOfTypedExpr e2', s ++ s2)
   typeOfExpr _   cns EmatchFailure      = do
-    v <- freshVar
+    v <- freshTypeVar
     s <- unify cns
     return (TEmatchFailure v, s)
