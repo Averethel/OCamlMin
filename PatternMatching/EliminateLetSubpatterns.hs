@@ -3,12 +3,11 @@
   #-}
 
 module PatternMatching.EliminateLetSubpatterns (eliminateLetSubPatterns) where
+  import Counters
   import TypedSyntax.Expr
   import TypedSyntax.Pattern
 
   import Types
-
-  import PatternMatching.Counters
 
   import Control.Monad.State
 
@@ -29,20 +28,20 @@ module PatternMatching.EliminateLetSubpatterns (eliminateLetSubPatterns) where
     | not (isAtomicTypedPattern p1) &&
       isAtomicTypedPattern p2           = do
         let t' = typeOfTypedPattern p1
-        v  <- freshVar t'
+        v  <- freshPMVar t'
         ps <- getSubPatterns p1 (TEvar v t')
         return $ (cons (TPvar v t') p2 t, e) : ps
     | isAtomicTypedPattern p1 &&
       not (isAtomicTypedPattern p2)    = do
         let t' = typeOfTypedPattern p2
-        v  <- freshVar t'
+        v  <- freshPMVar t'
         ps <- getSubPatterns p2 (TEvar v t')
         return $ (cons p1 (TPvar v t') t, e) : ps
     | otherwise                        = do
       let t1' = typeOfTypedPattern p1
       let t2' = typeOfTypedPattern p2
-      v1  <- freshVar t1'
-      v2  <- freshVar t2'
+      v1  <- freshPMVar t1'
+      v2  <- freshPMVar t2'
       ps1 <- getSubPatterns p1 (TEvar v1 t1')
       ps2 <- getSubPatterns p2 (TEvar v2 t2')
       return $ (cons (TPvar v1 t1') (TPvar v2 t2') t, e) : (ps1 ++ ps2)

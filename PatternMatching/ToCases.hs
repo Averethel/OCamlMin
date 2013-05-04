@@ -3,12 +3,11 @@
   #-}
 
 module PatternMatching.ToCases (handlesToCases) where
+  import Counters
   import Syntax
   import TypedSyntax
   import Types
   import Rename
-
-  import PatternMatching.Counters
 
   import Control.Exception.Base
   import Control.Monad.State
@@ -70,7 +69,7 @@ module PatternMatching.ToCases (handlesToCases) where
                  TypedExpr -> m TypedCaseClause
   matchClause c (_:us) qs def = do
     let types = case snd c of { Tfun ts _ -> ts; _ -> [] }
-    us' <- mapM freshVar types
+    us' <- mapM freshPMVar types
     e'  <- match (zip us' types ++ us)
           [(subpaterns p ++ ps, e) | (p : ps, e) <- qs] def
     return TCC { tccConstructor = c, tccVariables = zip us' types, tccBody = e' }

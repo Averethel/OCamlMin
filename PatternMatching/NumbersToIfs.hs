@@ -3,11 +3,10 @@
   #-}
 
 module PatternMatching.NumbersToIfs (numbersToIfs) where
+  import Counters
   import Syntax
   import TypedSyntax
   import Types
-
-  import PatternMatching.Counters
 
   import Control.Monad.State
 
