@@ -53,12 +53,5 @@ module RegAlloc.Targetting where
     where
       (c1, rs1) = target' src x t i
       (c2, rs2) = target src dest r e
-  target src dest t (Seq e1 e2)   =
-    if c1
-    then (True, rs1)
-    else (c2, rs1 ++ rs2)
-    where
-      (c1, rs1) = target src dest t e1
-      (c2, rs2) = target src dest t e2
   target src dest t (Labeled _ e) =
     target src dest t e

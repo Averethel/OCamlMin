@@ -154,11 +154,13 @@ module VMCode.Generate where
     e1' <- translateExpr exl e1
     e2' <- translateExpr l e2
     hdl <- nextHandledLabel
-    return $ Seq (Seq e1' $ Ans $ Ijump hdl) (Seq (Labeled exl e2') (Labeled hdl $ Ans Inop))
+    s1  <- buildSeq e1' $ Ans $ Ijump hdl
+    s2  <- buildSeq (Labeled exl e2') $ Labeled hdl $ Ans Inop
+    buildSeq s1 s2
   translateExpr l (CEseq e1 e2 _)           = do
     e1' <- translateExpr l e1
     e2' <- translateExpr l e2
-    return $  Seq e1' e2'
+    buildSeq e1' e2'
   translateExpr l e =
     assert False $ translateExpr l e
 

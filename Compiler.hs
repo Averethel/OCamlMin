@@ -37,7 +37,7 @@ module Compiler where
     e9     <- liftIO $ closureConvert e8
     e10    <- generateVMCode e9
     e11    <- liftIO $ optimizeProgram e10
-    liftIO $ regAllocProgram e11
+    regAllocProgram e11
 
   compile :: (MonadIO m, MonadState Counter m) =>
              Integer -> Expr -> m (Either String S.Program)

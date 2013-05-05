@@ -13,13 +13,21 @@ module SPARC.Utils where
   concat :: Seq -> String  -> Type -> Seq -> Seq
   concat (Ans e1)       x tx e2 = Let x tx e1 e2
   concat (Let y t e e1) x tx e2 = Let y t e $ SPARC.Utils.concat e1 x tx e2
-  concat (Seq e1 e2)    x tx e3 = Seq e1 $ SPARC.Utils.concat e2 x tx e3
   concat (Labeled l e1) x tx e2 = Labeled l $ SPARC.Utils.concat e1 x tx e2
 
   instrSeq :: MonadState Counter m => Instr -> Seq -> m Seq
   instrSeq i e = do
     idf <- freshName $ genId Tunit
     return $ Let idf Tunit i e
+
+  buildSeq :: MonadState Counter m => Seq -> Seq -> m Seq
+  buildSeq (Ans i) e2         = instrSeq i e2
+  buildSeq (Let x t i e1) e2  = do
+    e1' <- buildSeq e1 e2
+    return $ Let x t i e1'
+  buildSeq (Labeled l e1) e2  = do
+    e1' <- buildSeq e1 e2
+    return $ Labeled l e1'
 
   align :: Integer -> Integer
   align i
@@ -66,7 +74,6 @@ module SPARC.Utils where
   fvSeq :: Seq -> [String]
   fvSeq (Ans i)       = fvInstr i
   fvSeq (Let x _ i e) = fvInstr i ++ removeAndUniq (singleton x) (fvSeq e)
-  fvSeq (Seq e1 e2)   = fvSeq e1 ++ fvSeq e2
   fvSeq (Labeled _ e) = fvSeq e
 
   freeVars :: Seq -> [String]

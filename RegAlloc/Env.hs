@@ -3,19 +3,21 @@ module RegAlloc.Env where
   import SPARC.Utils
   import Types
 
+  import Control.Monad
+  import Control.Monad.Exception.Synchronous
+
   type Env = [(String, String)]
 
-  envFind :: String -> Type -> Env -> Either (String, Type) String
+  envFind :: Monad m => String -> Type -> Env ->
+              ExceptionalT (String, Type) m String
   envFind x t regenv
-    | isReg x   = Right x
+    | isReg x   = return x
     | otherwise =
       case x `lookup` regenv of
-        Nothing -> Left (x, t)
-        Just r  -> Right r
+        Nothing -> throwT (x, t)
+        Just y  -> return y
 
-  envFind' :: IdOrIimm -> Env -> Either (String, Type) IdOrIimm
-  envFind' (V x) regenv =
-    case envFind x Tint regenv of
-      Left err -> Left err
-      Right s  -> Right $ V s
-  envFind' c     _      = Right c
+  envFind' :: Monad m => IdOrIimm -> Env ->
+                ExceptionalT (String, Type) m IdOrIimm
+  envFind' (V x) regenv = liftM V $ envFind x Tint regenv
+  envFind' c     _      = return c
