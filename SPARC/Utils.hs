@@ -62,7 +62,6 @@ module SPARC.Utils where
   fvInstr (IfSubD x y)        = [x, y]
   fvInstr (IfMulD x y)        = [x, y]
   fvInstr (IfDivD x y)        = [x, y]
-  fvInstr (IfModD x y)        = [x, y]
   fvInstr (IifEq x y' e1 e2)  = x : fvIdOrImm y' ++ removeAndUniq empty (fvSeq e1 ++ fvSeq e2)
   fvInstr (IifLE x y' e1 e2)  = x : fvIdOrImm y' ++ removeAndUniq empty (fvSeq e1 ++ fvSeq e2)
   fvInstr (IifGE x y' e1 e2)  = x : fvIdOrImm y' ++ removeAndUniq empty (fvSeq e1 ++ fvSeq e2)
