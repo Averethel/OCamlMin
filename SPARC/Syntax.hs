@@ -1,6 +1,6 @@
 module SPARC.Syntax (
-  regs, fregs, regCl, regSw, regSp, regHp, regRa, failureLabel,
-  Label(..), IdOrIimm(..), Seq(..), Instr(..), FunDef(..), Program(..)
+  regs, fregs, coFregs, regCl, regSw, regFsw, regSp, regHp, regRa, failureLabel,
+  Label(..), IdOrImm(..), Seq(..), Instr(..), FunDef(..), Program(..)
 ) where
   import SPARC.Virtual.Syntax
 
@@ -30,6 +30,10 @@ module SPARC.Syntax (
   -- temporary for swap
   regSw :: String
   regSw = last . init $ regs
+
+  -- temporary for swap
+  regFsw :: String
+  regFsw = last fregs
 
   -- stack pointer
   regSp :: String

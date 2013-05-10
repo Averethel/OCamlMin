@@ -96,7 +96,7 @@ module RegAlloc.Alloc where
     envFind x rType regenv >>= (\s -> return (Ans $ constr s, regenv))
 
   regAllocDoubleArgInt :: (MonadState Counter m, MonadIO m) =>
-                          (String -> IdOrIimm -> Instr) -> String -> IdOrIimm ->
+                          (String -> IdOrImm -> Instr) -> String -> IdOrImm ->
                           Env -> ExceptionalT (String, Type) m (Seq, Env)
   regAllocDoubleArgInt constr x y regenv = do
     x' <- envFind x Tint regenv
@@ -112,8 +112,8 @@ module RegAlloc.Alloc where
     return (Ans $ constr x' y', regenv)
 
   regAllocTripleArg :: (MonadState Counter m, MonadIO m) => Type -> Type ->
-                        (String -> String -> IdOrIimm -> Instr) -> String ->
-                        String -> IdOrIimm -> Env ->
+                        (String -> String -> IdOrImm -> Instr) -> String ->
+                        String -> IdOrImm -> Env ->
                         ExceptionalT (String, Type) m (Seq, Env)
   regAllocTripleArg xType yType constr x y z regenv = do
     x' <- envFind x xType regenv

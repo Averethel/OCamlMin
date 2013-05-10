@@ -41,7 +41,7 @@ module SPARC.Utils where
     | x `member` s       = removeAndUniq s xs
     | otherwise          = x : removeAndUniq (x `insert` s) xs
 
-  fvIdOrImm :: IdOrIimm -> [String]
+  fvIdOrImm :: IdOrImm -> [String]
   fvIdOrImm (V x) = [x]
   fvIdOrImm _     = []
 

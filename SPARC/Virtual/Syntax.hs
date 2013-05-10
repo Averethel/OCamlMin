@@ -6,12 +6,12 @@ module SPARC.Virtual.Syntax where
   instance Show Label where
     show (L s) = s
 
-  data IdOrIimm =
+  data IdOrImm =
       V String
     | C Integer
     deriving Eq
 
-  instance Show IdOrIimm where
+  instance Show IdOrImm where
     show (V s) = s
     show (C n) = show n
 
@@ -29,24 +29,24 @@ module SPARC.Virtual.Syntax where
     | IsetL Label
     | Imov String
     | Ineg String
-    | Iadd String IdOrIimm
-    | Isub String IdOrIimm
-    | ISLL String IdOrIimm
-    | Ild String  IdOrIimm
-    | Ist String String IdOrIimm
+    | Iadd String IdOrImm
+    | Isub String IdOrImm
+    | ISLL String IdOrImm
+    | Ild String  IdOrImm
+    | Ist String String IdOrImm
     | IfMovD String
     | IfNegD String
     | IfAddD String String
     | IfSubD String String
     | IfMulD String String
     | IfDivD String String
-    | IldDF String IdOrIimm
-    | IstDF String String IdOrIimm
+    | IldDF String IdOrImm
+    | IstDF String String IdOrImm
     | Icomment String
     -- virtual instructions
-    | IifEq String IdOrIimm Seq Seq
-    | IifLE String IdOrIimm Seq Seq
-    | IifGE String IdOrIimm Seq Seq
+    | IifEq String IdOrImm Seq Seq
+    | IifLE String IdOrImm Seq Seq
+    | IifGE String IdOrImm Seq Seq
     | IifFEq String String Seq Seq
     | IifFLE String String Seq Seq
     -- closure address, integer arguments, and float arguments
