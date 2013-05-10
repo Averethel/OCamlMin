@@ -24,8 +24,6 @@ module ClosureConvert.ClosureConvert where
     return $ P [] $ CEmult x y t
   closureConvert _    (KEdiv x y t)             =
     return $ P [] $ CEdiv x y t
-  closureConvert _    (KEmod x y t)             =
-    return $ P [] $ CEmod x y t
   closureConvert _    (KEstore r x t)           =
     return $ P [] $ CEstore r x t
   closureConvert _    (KEvar x t)               =

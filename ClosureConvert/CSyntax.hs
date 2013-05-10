@@ -38,7 +38,6 @@ module ClosureConvert.CSyntax where
     | CEsub (String, Type) (String, Type) Type
     | CEmult (String, Type) (String, Type) Type
     | CEdiv (String, Type) (String, Type) Type
-    | CEmod (String, Type) (String, Type) Type
     | CEstore (String, Type) (String, Type) Type
     --
     | CEvar String Type
@@ -69,8 +68,6 @@ module ClosureConvert.CSyntax where
   freeVars (CEmult s1 s2 _)          =
     fromList [s1, s2]
   freeVars (CEdiv s1 s2 _)           =
-    fromList [s1, s2]
-  freeVars (CEmod s1 s2 _)           =
     fromList [s1, s2]
   freeVars (CEstore s1 s2 _)         =
     fromList [s1, s2]
@@ -113,7 +110,6 @@ module ClosureConvert.CSyntax where
   typeOfCExpr (CEsub _ _ t)         = t
   typeOfCExpr (CEmult _ _ t)        = t
   typeOfCExpr (CEdiv _ _ t)         = t
-  typeOfCExpr (CEmod _ _ t)         = t
   typeOfCExpr (CEstore _ _ t)       = t
   typeOfCExpr (CEvar _ t)           = t
   typeOfCExpr (CEerror _ t)         = t
@@ -152,9 +148,6 @@ module ClosureConvert.CSyntax where
               pprType t2, iStr " : ", pprType t ]
   pprCExpr (CEdiv (s1, t1) (s2, t2) t)                =
     iConcat [ iStr s1, iStr " : ", pprType t1, iStr " / ", iStr s2, iStr " : ",
-              pprType t2, iStr " : ", pprType t ]
-  pprCExpr (CEmod (s1, t1) (s2, t2) t)                =
-    iConcat [ iStr s1, iStr " : ", pprType t1, iStr " % ", iStr s2, iStr " : ",
               pprType t2, iStr " : ", pprType t ]
   pprCExpr (CEstore (s1, t1) (s2, t2) t)              =
     iConcat [ iStr s1, iStr " : ", pprType t1, iStr " := ", iStr s2, iStr " : ",
