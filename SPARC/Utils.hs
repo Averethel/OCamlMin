@@ -8,6 +8,7 @@ module SPARC.Utils where
   import Types
 
   import Control.Monad.State
+  import Data.Maybe (fromJust)
   import Data.Set
 
   concat :: Seq -> String  -> Type -> Seq -> Seq
@@ -82,3 +83,6 @@ module SPARC.Utils where
   isReg :: String -> Bool
   isReg ('%':_) = True
   isReg _       = False
+
+  coFreg :: String -> String
+  coFreg = fromJust . flip lookup coFregs
