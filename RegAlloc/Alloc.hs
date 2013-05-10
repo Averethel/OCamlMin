@@ -149,8 +149,6 @@ module RegAlloc.Alloc where
     regAllocDoubleArgFloat IfMulD x y regenv
   regAllocInstr _    _ _    regenv (IfDivD x y)         =
     regAllocDoubleArgFloat IfDivD x y regenv
-  regAllocInstr _    _ _    regenv (IfModD x y)         =
-    regAllocDoubleArgFloat IfModD x y regenv
   regAllocInstr _    _ _    regenv (IldDF x y)          =
     regAllocDoubleArgInt IldDF x y regenv
   regAllocInstr _    _ _    regenv (IstDF x y z)        =
