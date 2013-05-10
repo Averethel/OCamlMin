@@ -32,7 +32,6 @@ module KNormal.KSyntax where
     | KEsub (String, Type) (String, Type) Type
     | KEmult (String, Type) (String, Type) Type
     | KEdiv (String, Type) (String, Type) Type
-    | KEmod (String, Type) (String, Type) Type
     | KEstore (String, Type) (String, Type) Type                                -- Assignment
     --
     | KEvar String Type
@@ -65,8 +64,6 @@ module KNormal.KSyntax where
   freeVars (KEmult (s1, _) (s2, _) _)               =
     fromList [s1, s2]
   freeVars (KEdiv (s1, _) (s2, _) _)                =
-    fromList [s1, s2]
-  freeVars (KEmod (s1, _) (s2, _) _)                =
     fromList [s1, s2]
   freeVars (KEstore (s1, _) (s2, _) _)              =
     fromList [s1, s2]
@@ -110,7 +107,6 @@ module KNormal.KSyntax where
   typeOfKExpr (KEsub _ _ t)         = t
   typeOfKExpr (KEmult _ _ t)        = t
   typeOfKExpr (KEdiv _ _ t)         = t
-  typeOfKExpr (KEmod _ _ t)         = t
   typeOfKExpr (KEstore _ _ t)       = t
   typeOfKExpr (KEvar _ t)           = t
   typeOfKExpr (KEerror _ t)         = t
@@ -151,9 +147,6 @@ module KNormal.KSyntax where
               iStr " : ", pprType t2, iStr ") : ", pprType t3 ]
   pprKExpr (KEdiv (s1, t1) (s2, t2) t3)               =
     iConcat [ iStr "(", iStr s1, iStr " : ", pprType t1, iStr ") / (", iStr s2,
-              iStr " : ", pprType t2, iStr ") : ", pprType t3 ]
-  pprKExpr (KEmod (s1, t1) (s2, t2) t3)               =
-    iConcat [ iStr "(", iStr s1, iStr " : ", pprType t1, iStr ") % (", iStr s2,
               iStr " : ", pprType t2, iStr ") : ", pprType t3 ]
   pprKExpr (KEstore (s1, t1) (s2, t2) t3)             =
     iConcat [ iStr "(", iStr s1, iStr " : ", pprType t1, iStr ") := (", iStr s2,

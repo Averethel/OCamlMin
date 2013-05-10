@@ -35,8 +35,6 @@ module AlphaConvert.AlphaConvert (alphaConvert) where
     return $ KEmult (env `find` s1, t1) (env `find` s2, t2) t3
   alphaConvert env (KEdiv (s1, t1) (s2, t2) t3)           =
     return $ KEdiv (env `find` s1, t1) (env `find` s2, t2) t3
-  alphaConvert env (KEmod (s1, t1) (s2, t2) t3)           =
-    return $ KEmod (env `find` s1, t1) (env `find` s2, t2) t3
   alphaConvert env (KEstore (s1, t1) (s2, t2) t3)         =
     return $ KEstore (env `find` s1, t1) (env `find` s2, t2) t3
   alphaConvert env (KEvar s t)                            =
