@@ -8,12 +8,24 @@ module Counters where
 
   import Control.Monad.State
   import Data.Map (Map, fromList, (!))
+  import Data.Set (Set, empty)
+
+  type StackSet = Set String
+  type StackMap = [String]
+
+  emptyStackSet :: StackSet
+  emptyStackSet = empty
+
+  emptyStackMap :: StackMap
+  emptyStackMap = []
 
   data Counter = Cs {
     errorLabel    :: Integer,
     handledLabel  :: Integer,
     typeVar       :: Integer,
-    variable      :: Integer
+    variable      :: Integer,
+    stackMap      :: StackMap,
+    stackSet      :: StackSet
   }
 
   emptyState :: Counter
@@ -21,7 +33,9 @@ module Counters where
     errorLabel    = 0,
     handledLabel  = 0,
     typeVar       = 0,
-    variable      = 0
+    variable      = 0,
+    stackMap      = emptyStackMap,
+    stackSet      = emptyStackSet
   }
 
   stateIncMap :: Map String (Counter -> Counter)
