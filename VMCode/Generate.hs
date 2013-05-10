@@ -86,8 +86,6 @@ module VMCode.Generate where
     return $ Ans $ IfMulD s1 s2
   translateExpr _ (CEdiv (s1, _) (s2, _) _) =
     return $ Ans $ IfDivD s1 s2
-  translateExpr _ (CEmod (s1, _) (s2, _) _) =
-    return $ Ans $ IfModD s1 s2
   translateExpr _ (CEstore (s1, Tref t) s2 _) =
     case t of
       Tunit -> return $ Ans Inop

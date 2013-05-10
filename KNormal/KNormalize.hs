@@ -108,8 +108,19 @@ module KNormal.KNormalize (kNormalize) where
     kNormalizeOp KEmult t e1 e2
   kNormalizeBPrim (BPdiv, t)    e1 e2  =
     kNormalizeOp KEdiv t e1 e2
-  kNormalizeBPrim (BPmod, t)    e1 e2  =
-    kNormalizeOp KEmod t e1 e2
+  kNormalizeBPrim (BPmod, t)    e1 e2  = do
+    e1' <- kNormalize e1
+    e2' <- kNormalize e2
+    let Tfun [t1, t2] t3 = t
+    x1  <- freshKVar t1
+    x2  <- freshKVar t2
+    x3  <- freshKVar t3
+    x4  <- freshKVar t3
+    return $ KElet (x1, t1) e1' (
+              KElet (x2, t2) e2' (
+                KElet (x3, t3) (KEdiv (x1, t1) (x2, t2) t3) (
+                 KElet (x4, t3) (KEmult (x3, t3) (x2, t2) t3)
+                   (KEsub (x3, t3) (x4, t3) t3) t3) t3) t3) t3
   kNormalizeBPrim (BPassign, t) e1 e2  =
     kNormalizeOp KEstore t e1 e2
 

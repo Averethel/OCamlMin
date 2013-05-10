@@ -20,9 +20,6 @@ module ConstantsFold.ConstantsFold where
   constantsFold env (KEdiv (s1, _) (s2, _) _)
     | s1 `memi` env && s2 `memi` env        =
       KEint (s1 `findi` env `div` s2 `findi` env) Tint
-  constantsFold env (KEmod (s1, _) (s2, _) _)
-    | s1 `memi` env && s2 `memi` env        =
-      KEint (s1 `findi` env `mod` s2 `findi` env) Tint
   constantsFold env (KEvar s _)
     | s `memi` env                          =
       KEint (s `findi` env) Tint
