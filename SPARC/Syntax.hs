@@ -1,8 +1,10 @@
 module SPARC.Syntax (
   regs, fregs, coFregs, regCl, regSw, regFsw, regSp, regHp, regRa, failureLabel,
-  Label(..), IdOrImm(..), Seq(..), Instr(..), FunDef(..), Program(..)
+  Label(..), IdOrImm(..), Seq(..), Instr(..), FunDef(..), Program(..),
+  Address(..), Instruction(..), Function(..), Prog(..)
 ) where
-  import SPARC.Virtual.Syntax
+  import SPARC.Syntax.Virtual
+  import SPARC.Syntax.Concrete
 
   regs :: [String]
   regs =

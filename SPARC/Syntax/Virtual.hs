@@ -1,4 +1,4 @@
-module SPARC.Virtual.Syntax where
+module SPARC.Syntax.Virtual where
   import Types
 
   data Label = L String deriving Eq
@@ -31,6 +31,8 @@ module SPARC.Virtual.Syntax where
     | Ineg String
     | Iadd String IdOrImm
     | Isub String IdOrImm
+    | ISmul String IdOrImm
+    | ISdiv String IdOrImm
     | ISLL String IdOrImm
     | Ild String  IdOrImm
     | Ist String String IdOrImm
