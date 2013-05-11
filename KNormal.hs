@@ -6,7 +6,7 @@ module KNormal (
   convertToKNormal,
   KExpr(..)
 ) where
-  import Counters
+  import CompilerState
   import KNormal.KNormalize
   import KNormal.KSyntax
 
@@ -14,5 +14,5 @@ module KNormal (
 
   import Control.Monad.State
 
-  convertToKNormal :: MonadState Counter m => TypedExpr -> m KExpr
+  convertToKNormal :: MonadState CompilerState m => TypedExpr -> m KExpr
   convertToKNormal = kNormalize

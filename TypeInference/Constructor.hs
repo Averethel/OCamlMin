@@ -3,7 +3,7 @@
   #-}
 
 module TypeInference.Constructor where
-  import Counters
+  import CompilerState
   import Syntax.Constructor
   import TypedSyntax.Constructor
   import Types
@@ -14,7 +14,7 @@ module TypeInference.Constructor where
   import Control.Monad.Error
   import Control.Monad.State
 
-  typeAndBindingsOfConstructor :: (MonadState Counter m, MonadError String m) =>
+  typeAndBindingsOfConstructor :: (MonadState CompilerState m, MonadError String m) =>
                                   Constructor -> [String] ->
                                   m (TypedConstructor, Env)
   typeAndBindingsOfConstructor CNnil   []     = do

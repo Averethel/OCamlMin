@@ -3,13 +3,13 @@
   #-}
 
 module TypeInference.BinaryPrim where
-  import Counters
+  import CompilerState
   import Syntax.BinaryPrim
   import Types
 
   import Control.Monad.State
 
-  typeOfBinaryPrim :: MonadState Counter m => BinaryPrim -> m Type
+  typeOfBinaryPrim :: MonadState CompilerState m => BinaryPrim -> m Type
   typeOfBinaryPrim BPeq     = do
     v <- freshTypeVar
     return $ Tfun [v, v] Tbool

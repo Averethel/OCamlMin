@@ -3,11 +3,12 @@
   #-}
 
 module SPARC.Utils where
-  import Counters
+  import CompilerState
   import SPARC.Syntax
   import Types
 
   import Control.Monad.State
+  import Data.Maybe (fromJust)
   import Data.Set
 
   concat :: Seq -> String  -> Type -> Seq -> Seq
@@ -15,12 +16,12 @@ module SPARC.Utils where
   concat (Let y t e e1) x tx e2 = Let y t e $ SPARC.Utils.concat e1 x tx e2
   concat (Labeled l e1) x tx e2 = Labeled l $ SPARC.Utils.concat e1 x tx e2
 
-  instrSeq :: MonadState Counter m => Instr -> Seq -> m Seq
+  instrSeq :: MonadState CompilerState m => Instr -> Seq -> m Seq
   instrSeq i e = do
     idf <- freshName $ genId Tunit
     return $ Let idf Tunit i e
 
-  buildSeq :: MonadState Counter m => Seq -> Seq -> m Seq
+  buildSeq :: MonadState CompilerState m => Seq -> Seq -> m Seq
   buildSeq (Ans i) e2         = instrSeq i e2
   buildSeq (Let x t i e1) e2  = do
     e1' <- buildSeq e1 e2
@@ -40,7 +41,7 @@ module SPARC.Utils where
     | x `member` s       = removeAndUniq s xs
     | otherwise          = x : removeAndUniq (x `insert` s) xs
 
-  fvIdOrImm :: IdOrIimm -> [String]
+  fvIdOrImm :: IdOrImm -> [String]
   fvIdOrImm (V x) = [x]
   fvIdOrImm _     = []
 
@@ -81,3 +82,6 @@ module SPARC.Utils where
   isReg :: String -> Bool
   isReg ('%':_) = True
   isReg _       = False
+
+  coFreg :: String -> String
+  coFreg = fromJust . flip lookup coFregs

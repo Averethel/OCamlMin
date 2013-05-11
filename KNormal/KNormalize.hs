@@ -5,7 +5,7 @@
 module KNormal.KNormalize (kNormalize) where
   import KNormal.KSyntax
 
-  import Counters
+  import CompilerState
   import Syntax
   import TypedSyntax
   import Types
@@ -15,7 +15,7 @@ module KNormal.KNormalize (kNormalize) where
 
   import Utils.Errors
 
-  insertLet :: MonadState Counter m => KExpr -> (String -> Type -> m KExpr) ->
+  insertLet :: MonadState CompilerState m => KExpr -> (String -> Type -> m KExpr) ->
                m KExpr
   insertLet (KEvar x t) k = k x t
   insertLet e           k = do
@@ -30,13 +30,13 @@ module KNormal.KNormalize (kNormalize) where
   kNormalizeConstant (Cnil, t)     = KEnil t
   kNormalizeConstant (Cunit, t)    = KEunit t
 
-  mkFunDef :: MonadState Counter m => String -> TypedFunClause -> m FunDef
+  mkFunDef :: MonadState CompilerState m => String -> TypedFunClause -> m FunDef
   mkFunDef n fc = do
     let as = map (\(TPvar x t) -> (x, t)) $ tfcArguments fc
     b <- kNormalize $ tfcBody fc
     return FD{ name = (n, typeOfTypedFunClause fc), body = b, args = as }
 
-  kNormalizeUPrim :: MonadState Counter m => TypedUnaryPrim -> TypedExpr ->
+  kNormalizeUPrim :: MonadState CompilerState m => TypedUnaryPrim -> TypedExpr ->
                      m KExpr
   kNormalizeUPrim (UPnot, _)   e =
     kNormalize $ TEif e (TEconst (Cbool False, Tbool))
@@ -54,7 +54,7 @@ module KNormal.KNormalize (kNormalize) where
     e' <- kNormalize e
     insertLet e' (\x t' -> return $ KEneg (x, t') t1)
 
-  kNormalizeOp :: MonadState Counter m =>
+  kNormalizeOp :: MonadState CompilerState m =>
                   ((String, Type) -> (String, Type) -> Type -> KExpr) ->
                   Type -> TypedExpr -> TypedExpr -> m KExpr
   kNormalizeOp op t e1 e2 = do
@@ -64,7 +64,7 @@ module KNormal.KNormalize (kNormalize) where
       e2' <- kNormalize e2;
       insertLet e2' (\x2 t2 -> return $ op (x1, t1) (x2, t2) t' )})
 
-  kNormalizeBPrim :: MonadState Counter m =>
+  kNormalizeBPrim :: MonadState CompilerState m =>
                      TypedBinaryPrim -> TypedExpr -> TypedExpr -> m KExpr
   kNormalizeBPrim (BPeq, _)     e1 e2  = do
     e1' <- kNormalize e1
@@ -124,7 +124,7 @@ module KNormal.KNormalize (kNormalize) where
   kNormalizeBPrim (BPassign, t) e1 e2  =
     kNormalizeOp KEstore t e1 e2
 
-  kNormalizeArgs :: MonadState Counter m =>
+  kNormalizeArgs :: MonadState CompilerState m =>
                     [TypedExpr] -> m ([(String, Type)], KExpr -> KExpr)
   kNormalizeArgs []     = return ([], id)
   kNormalizeArgs (a:as) = do
@@ -139,7 +139,7 @@ module KNormal.KNormalize (kNormalize) where
           KElet (v, t) a' e' $ typeOfKExpr e')
 
 
-  kNormalizeCaseBool :: MonadState Counter m =>
+  kNormalizeCaseBool :: MonadState CompilerState m =>
                         String -> TypedExpr -> TypedExpr -> m KExpr
   kNormalizeCaseBool n et ef = do
     v   <- freshKVar Tbool
@@ -149,7 +149,7 @@ module KNormal.KNormalize (kNormalize) where
     return $ KElet (v, Tint) (KEint 1 Tint)
               (KEifEq (n, Tint) (v, Tint) et' ef' t') t'
 
-  genVars :: MonadState Counter m => String -> Type ->
+  genVars :: MonadState CompilerState m => String -> Type ->
              m (KExpr, (String, Type), (String, Type))
   genVars n t = do
     let e' = KEextFunApp ("tag_of", Tfun [t] Tint) [(n, t)] Tint
@@ -157,7 +157,7 @@ module KNormal.KNormalize (kNormalize) where
     v2  <- freshKVar Tint
     return (e', (v1, Tint), (v2, Tint))
 
-  kNormalizeCaseList :: MonadState Counter m => String -> Type -> TypedExpr ->
+  kNormalizeCaseList :: MonadState CompilerState m => String -> Type -> TypedExpr ->
                         String -> Type -> String -> Type -> TypedExpr ->
                         m KExpr
   kNormalizeCaseList n t en x tx xs txs ec = do
@@ -178,7 +178,7 @@ module KNormal.KNormalize (kNormalize) where
 
 
 
-  kNormalizeCase :: MonadState Counter m =>
+  kNormalizeCase :: MonadState CompilerState m =>
                     [TypedCaseClause] -> String -> m KExpr
   -- pair
   kNormalizeCase [TCC { tccConstructor = (CNpair, t),
@@ -234,7 +234,7 @@ module KNormal.KNormalize (kNormalize) where
   kNormalizeCase ccs n = assert False $ kNormalizeCase ccs n
 
 
-  kNormalize :: MonadState Counter m => TypedExpr -> m KExpr
+  kNormalize :: MonadState CompilerState m => TypedExpr -> m KExpr
   kNormalize (TEconst c)                                                =
     return $ kNormalizeConstant c
   kNormalize (TEvar s t)                                                =

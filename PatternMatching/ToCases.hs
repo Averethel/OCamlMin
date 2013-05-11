@@ -3,7 +3,7 @@
   #-}
 
 module PatternMatching.ToCases (handlesToCases) where
-  import Counters
+  import CompilerState
   import Syntax
   import TypedSyntax
   import Types
@@ -55,7 +55,7 @@ module PatternMatching.ToCases (handlesToCases) where
   getVars :: [TypedPattern] -> [(String, Type)]
   getVars = map (\(TPvar x t) -> (x, t))
 
-  matchVar :: MonadState Counter m =>
+  matchVar :: MonadState CompilerState m =>
               [(String, Type)] -> [Equation] -> TypedExpr -> m TypedExpr
   matchVar ((u, _):us) qs =
     match us [(ps, rename v u e) | (TPvar v _: ps, e) <- qs]
@@ -64,7 +64,7 @@ module PatternMatching.ToCases (handlesToCases) where
   choose :: TypedConstructor -> [Equation] -> [Equation]
   choose c qs = [q | q <- qs, fst (getCon q) == fst c]
 
-  matchClause :: MonadState Counter m =>
+  matchClause :: MonadState CompilerState m =>
                  TypedConstructor -> [(String, Type)] -> [Equation] ->
                  TypedExpr -> m TypedCaseClause
   matchClause c (_:us) qs def = do
@@ -75,7 +75,7 @@ module PatternMatching.ToCases (handlesToCases) where
     return TCC { tccConstructor = c, tccVariables = zip us' types, tccBody = e' }
   matchClause c us     qs def = assert False $ matchClause c us qs def
 
-  matchCon :: MonadState Counter m => [(String, Type)] -> [Equation] ->
+  matchCon :: MonadState CompilerState m => [(String, Type)] -> [Equation] ->
               TypedExpr -> m TypedExpr
   matchCon ((u, t):us) qs def = do
     let cs = constructors . getCon . head $ qs
@@ -84,7 +84,7 @@ module PatternMatching.ToCases (handlesToCases) where
     return $ TEcase (TEvar u t) ms' r
   matchCon us     qs def = assert False $ matchCon us qs def
 
-  matchVarCon :: MonadState Counter m =>
+  matchVarCon :: MonadState CompilerState m =>
                  [(String, Type)] -> [Equation] -> TypedExpr -> m TypedExpr
   matchVarCon us qs def
     | isVar . head $ qs =
@@ -92,7 +92,7 @@ module PatternMatching.ToCases (handlesToCases) where
     | otherwise         =
       matchCon us qs def
 
-  match :: MonadState Counter m => [(String, Type)] -> [Equation] ->
+  match :: MonadState CompilerState m => [(String, Type)] -> [Equation] ->
            TypedExpr -> m TypedExpr
   match []     qs def =
     return $ foldr (\a b -> TEhandle a b $ typeOfTypedExpr def) def
@@ -105,13 +105,13 @@ module PatternMatching.ToCases (handlesToCases) where
     (tfcArguments fc, tfcBody fc) : decompose e2
   decompose _                                   = []
 
-  handlesToCasesCaseClause :: MonadState Counter m => TypedCaseClause ->
+  handlesToCasesCaseClause :: MonadState CompilerState m => TypedCaseClause ->
                               m TypedCaseClause
   handlesToCasesCaseClause cc = do
     b' <- handlesToCases $ tccBody cc
     return cc{ tccBody = b' }
 
-  handlesToCasesFunClauses :: MonadState Counter m => [TypedFunClause] ->
+  handlesToCasesFunClauses :: MonadState CompilerState m => [TypedFunClause] ->
                               m TypedFunClause
   handlesToCasesFunClauses fcs = do
     let eqs = concatMap (decompose . tfcBody) fcs
@@ -119,7 +119,7 @@ module PatternMatching.ToCases (handlesToCases) where
     cs' <- match ags eqs $ TEmatchFailure $ typeOfTypedFunClause . head $ fcs
     return TFC { tfcArguments = map (uncurry TPvar) ags, tfcBody = cs' }
 
-  handlesToCases :: MonadState Counter m => TypedExpr -> m TypedExpr
+  handlesToCases :: MonadState CompilerState m => TypedExpr -> m TypedExpr
   handlesToCases (TEfun fcs t)            = do
     cs <- handlesToCasesFunClauses fcs
     return $ TEfun [cs] t

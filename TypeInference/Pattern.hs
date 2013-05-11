@@ -3,7 +3,7 @@
   #-}
 
 module TypeInference.Pattern (typeAndBindingsOfPattern) where
-  import Counters
+  import CompilerState
   import Syntax.Pattern
   import TypedSyntax.Pattern
   import Types
@@ -32,14 +32,14 @@ module TypeInference.Pattern (typeAndBindingsOfPattern) where
   getids (Ppair p1 p2) = getids p1 ++ getids p2
   getids (Pcons p1 p2) = getids p1 ++ getids p2
 
-  typeAndBindingsOfPattern :: (MonadError String m,  MonadState Counter m) =>
+  typeAndBindingsOfPattern :: (MonadError String m,  MonadState CompilerState m) =>
                               Pattern -> m (TypedPattern, Env, Constraints)
   typeAndBindingsOfPattern p
     | idsDistinct $ getids p = typeAndBindingsOfPattern' p
     | otherwise              = throwError $ overlappingIds p
     where
       typeAndBindingsOfPattern' :: (MonadError String m,
-                                    MonadState Counter m) =>
+                                    MonadState CompilerState m) =>
                                     Pattern ->
                                     m (TypedPattern, Env, Constraints)
       typeAndBindingsOfPattern' Pwildcard     = do

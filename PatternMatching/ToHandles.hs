@@ -3,19 +3,19 @@
   #-}
 
 module PatternMatching.ToHandles where
-  import Counters
+  import CompilerState
   import TypedSyntax.Expr
   import TypedSyntax.Pattern
 
   import Control.Monad.State
 
-  functionsToHandlesFunClause :: MonadState Counter m => TypedFunClause ->
+  functionsToHandlesFunClause :: MonadState CompilerState m => TypedFunClause ->
                                  m TypedExpr
   functionsToHandlesFunClause fc = do
     b' <- functionsToHandles $ tfcBody fc
     return $ TEfun [fc { tfcBody  = b' }] $ typeOfTypedFunClause fc
 
-  functionsToHandlesFunClauses :: MonadState Counter m =>
+  functionsToHandlesFunClauses :: MonadState CompilerState m =>
                                   [TypedFunClause] -> m [TypedFunClause]
   functionsToHandlesFunClauses fcs = do
     fcs'   <- mapM functionsToHandlesFunClause fcs
@@ -28,7 +28,7 @@ module PatternMatching.ToHandles where
                                         (TEmatchFailure rtype) fcs'' }]
 
 
-  functionsToHandles :: MonadState Counter m => TypedExpr -> m TypedExpr
+  functionsToHandles :: MonadState CompilerState m => TypedExpr -> m TypedExpr
   functionsToHandles (TEfun fcs t)            = do
     fcs' <- functionsToHandlesFunClauses fcs
     return $ TEfun fcs' t

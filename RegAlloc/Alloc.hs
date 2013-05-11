@@ -11,7 +11,7 @@ module RegAlloc.Alloc where
   import SPARC.Utils
   import Types
 
-  import Counters
+  import CompilerState
   import Control.Exception.Base (assert)
   import Control.Monad.Exception.Synchronous hiding (assert)
   import Control.Monad.State
@@ -25,7 +25,7 @@ module RegAlloc.Alloc where
     | Spill String -- spilled variable
 
 
-  alloc :: (MonadState Counter m, MonadIO m) => String -> Type -> Seq -> Env ->
+  alloc :: (MonadState CompilerState m, MonadIO m) => String -> Type -> Seq -> Env ->
            String -> Type -> m AllocResult
   alloc _    _ _    regenv x Tunit =
     assert (not $ x `hasKeyAL` regenv) $ return $ Alloc "%g0"
@@ -54,7 +54,7 @@ module RegAlloc.Alloc where
           liftIO $ putStrLn $ "spilling " ++ show y ++ " from " ++ show (fromJust $ y `lookup` regenv) ++ "."
           return $ Spill y
 
-  regAllocSeq :: (MonadState Counter m, MonadIO m) => String -> Type -> Seq ->
+  regAllocSeq :: (MonadState CompilerState m, MonadIO m) => String -> Type -> Seq ->
                  Env -> Seq -> m (Seq, Env)
   regAllocSeq dest t cont regenv (Ans i)        =
     regAllocInstrAndRestore dest t cont regenv i
@@ -79,7 +79,7 @@ module RegAlloc.Alloc where
     (s', regenv') <- regAllocSeq dest t cont regenv s
     return (Labeled l s', regenv')
 
-  regAllocInstrAndRestore :: (MonadState Counter m, MonadIO m) => String ->
+  regAllocInstrAndRestore :: (MonadState CompilerState m, MonadIO m) => String ->
                               Type -> Seq -> Env -> Instr -> m (Seq, Env)
   regAllocInstrAndRestore dest t cont regenv i = do
     r <- runExceptionalT $ regAllocInstr dest t cont regenv i
@@ -89,21 +89,21 @@ module RegAlloc.Alloc where
         liftIO $ putStrLn $ "Restoring " ++ show x ++ "."
         regAllocSeq dest t cont regenv $ Let x tx (Irestore x) $ Ans i
 
-  regAllocSingleArg :: (MonadState Counter m, MonadIO m) => Type ->
+  regAllocSingleArg :: (MonadState CompilerState m, MonadIO m) => Type ->
                         (String -> Instr) -> String -> Env ->
                         ExceptionalT (String, Type) m (Seq, Env)
   regAllocSingleArg rType constr x regenv =
     envFind x rType regenv >>= (\s -> return (Ans $ constr s, regenv))
 
-  regAllocDoubleArgInt :: (MonadState Counter m, MonadIO m) =>
-                          (String -> IdOrIimm -> Instr) -> String -> IdOrIimm ->
+  regAllocDoubleArgInt :: (MonadState CompilerState m, MonadIO m) =>
+                          (String -> IdOrImm -> Instr) -> String -> IdOrImm ->
                           Env -> ExceptionalT (String, Type) m (Seq, Env)
   regAllocDoubleArgInt constr x y regenv = do
     x' <- envFind x Tint regenv
     y' <- envFind' y regenv
     return (Ans $ constr x' y', regenv)
 
-  regAllocDoubleArgFloat :: (MonadState Counter m, MonadIO m) =>
+  regAllocDoubleArgFloat :: (MonadState CompilerState m, MonadIO m) =>
                             (String -> String -> Instr) -> String -> String ->
                             Env -> ExceptionalT (String, Type) m (Seq, Env)
   regAllocDoubleArgFloat constr x y regenv = do
@@ -111,9 +111,9 @@ module RegAlloc.Alloc where
     y' <- envFind y Tfloat regenv
     return (Ans $ constr x' y', regenv)
 
-  regAllocTripleArg :: (MonadState Counter m, MonadIO m) => Type -> Type ->
-                        (String -> String -> IdOrIimm -> Instr) -> String ->
-                        String -> IdOrIimm -> Env ->
+  regAllocTripleArg :: (MonadState CompilerState m, MonadIO m) => Type -> Type ->
+                        (String -> String -> IdOrImm -> Instr) -> String ->
+                        String -> IdOrImm -> Env ->
                         ExceptionalT (String, Type) m (Seq, Env)
   regAllocTripleArg xType yType constr x y z regenv = do
     x' <- envFind x xType regenv
@@ -121,7 +121,7 @@ module RegAlloc.Alloc where
     z' <- envFind' z regenv
     return (Ans $ constr x' y' z', regenv)
 
-  regAllocInstr :: (MonadState Counter m, MonadIO m) => String -> Type -> Seq ->
+  regAllocInstr :: (MonadState CompilerState m, MonadIO m) => String -> Type -> Seq ->
                     Env -> Instr -> ExceptionalT (String, Type) m (Seq, Env)
   regAllocInstr _    _ _    regenv (Imov x)             =
     regAllocSingleArg Tint Imov x regenv
@@ -189,7 +189,7 @@ module RegAlloc.Alloc where
   regAllocInstr _    _ _    regenv i           =
     return (Ans i, regenv)
 
-  regAllocIf :: (MonadState Counter m, MonadIO m) => String -> Type -> Seq ->
+  regAllocIf :: (MonadState CompilerState m, MonadIO m) => String -> Type -> Seq ->
                 Env -> (Seq -> Seq -> ExceptionalT (String, Type) m Instr) ->
                 Seq -> Seq -> ExceptionalT (String, Type) m (Seq, Env)
   regAllocIf dest t cont regenv constr e1 e2 = do
@@ -212,7 +212,7 @@ module RegAlloc.Alloc where
             else lift $ instrSeq (Isave (fromJust $ x `lookup` regenv) x) e) (Ans i) $ freeVars cont
     return (seq', regenv')
 
-  regAllocCall :: (MonadState Counter m, MonadIO m) => String -> Seq -> Env ->
+  regAllocCall :: (MonadState CompilerState m, MonadIO m) => String -> Seq -> Env ->
                   ([String] -> [String] ->
                     ExceptionalT (String, Type) m Instr) -> [String] ->
                   [String] -> ExceptionalT (String, Type) m (Seq, Env)

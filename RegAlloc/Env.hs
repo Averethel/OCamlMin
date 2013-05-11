@@ -17,7 +17,7 @@ module RegAlloc.Env where
         Nothing -> throwT (x, t)
         Just y  -> return y
 
-  envFind' :: Monad m => IdOrIimm -> Env ->
-                ExceptionalT (String, Type) m IdOrIimm
+  envFind' :: Monad m => IdOrImm -> Env ->
+                ExceptionalT (String, Type) m IdOrImm
   envFind' (V x) regenv = liftM V $ envFind x Tint regenv
   envFind' c     _      = return c
