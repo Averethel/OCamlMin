@@ -83,9 +83,9 @@ module VMCode.Generate where
   translateExpr _ (CEsub (s1, _) (s2, _) _) =
     return $ Ans $ Isub s1 $ V s2
   translateExpr _ (CEmult (s1, _) (s2, _) _) =
-    return $ Ans $ IfMulD s1 s2
+    return $ Ans $ ISmul s1 $ V s2
   translateExpr _ (CEdiv (s1, _) (s2, _) _) =
-    return $ Ans $ IfDivD s1 s2
+    return $ Ans $ ISdiv s1 $ V s2
   translateExpr _ (CEstore (s1, Tref t) s2 _) =
     case t of
       Tunit -> return $ Ans Inop
