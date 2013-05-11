@@ -5,6 +5,10 @@ Implementation of OCamlMin language based on min-caml project.
 
 Changelog
 =========
+* 11 V 2013
+  * Initial version of code emitter
+* 10 V 2013
+  * Added Virtual and Concrete SPARC assembly syntax
 * 3 V 2013
   * Initial version of register allocation
 * 26 IV 2013
