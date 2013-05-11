@@ -3,7 +3,7 @@
   #-}
 
 module TypeInference.Expr (typeOfExpr) where
-  import Counters
+  import CompilerState
   import Syntax.BinaryPrim
   import Syntax.Expr
   import TypedSyntax.Expr
@@ -24,7 +24,7 @@ module TypeInference.Expr (typeOfExpr) where
   import Control.Monad.Error
   import Control.Monad.State hiding (get)
 
-  typeOfFunClause :: (MonadState Counter m, MonadError String m) =>
+  typeOfFunClause :: (MonadState CompilerState m, MonadError String m) =>
                      Env -> Constraints -> FunClause ->
                      m (TypedFunClause, Subst)
   typeOfFunClause env cns fc = do
@@ -34,7 +34,7 @@ module TypeInference.Expr (typeOfExpr) where
     s'      <- unify (concat cas ++ cns)
     return (TFC tas te `applySubstTFC` s `applySubstTFC` s', s ++ s')
 
-  typeOfFunction :: (MonadState Counter m, MonadError String m) =>
+  typeOfFunction :: (MonadState CompilerState m, MonadError String m) =>
                     Env -> Constraints -> [FunClause] ->
                     m ([TypedFunClause], Type, Subst)
   typeOfFunction env cns fcs = do
@@ -45,7 +45,7 @@ module TypeInference.Expr (typeOfExpr) where
     let subst = foldl (++) s ss
     return (map (`applySubstTFC` subst) fcs', t `applySubst` subst, subst)
 
-  typeOfCaseClause :: (MonadState Counter m, MonadError String m) =>
+  typeOfCaseClause :: (MonadState CompilerState m, MonadError String m) =>
                       Env -> Constraints -> CaseClause ->
                       m (TypedCaseClause, Subst)
   typeOfCaseClause env cns cc = do
@@ -54,7 +54,7 @@ module TypeInference.Expr (typeOfExpr) where
     s'       <- unify cns
     return (TCC tp bs te `applySubstTCC` s' `applySubstTCC` s, s' ++ s)
 
-  typeOfCase :: (MonadState Counter m, MonadError String m) =>
+  typeOfCase :: (MonadState CompilerState m, MonadError String m) =>
                 Env -> Constraints -> [CaseClause] ->
                 m ([TypedCaseClause], Subst)
   typeOfCase env cns cls = do
@@ -66,7 +66,7 @@ module TypeInference.Expr (typeOfExpr) where
     return (map (`applySubstTCC` subst) cs, subst)
 
 
-  typeOfExpr :: (MonadState Counter m, MonadError String m) =>
+  typeOfExpr :: (MonadState CompilerState m, MonadError String m) =>
                 Env -> Constraints -> Expr -> m (TypedExpr, Subst)
   typeOfExpr _   cns (Econst c)         = do
     t <- typeOfConstant c

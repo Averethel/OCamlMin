@@ -9,12 +9,12 @@ module RegAlloc (regAllocProgram) where
 
   import RegAlloc.Alloc
 
-  import Counters
+  import CompilerState
   import Control.Monad.State
   import Control.Exception.Base
   import Data.List.Utils
 
-  regAllocFunDef :: (MonadState Counter m, MonadIO m) => FunDef -> m FunDef
+  regAllocFunDef :: (MonadState CompilerState m, MonadIO m) => FunDef -> m FunDef
   regAllocFunDef fd = do
     let L x = name fd
     let initEnv = [(x, regCl)]
@@ -33,7 +33,7 @@ module RegAlloc (regAllocProgram) where
     (e', _) <- regAllocSeq a (ret fd) (Ans $ Imov a) env' $ body fd
     return $ fd{ args = argRegs, fargs = fArgRegs, body = e' }
 
-  regAllocProgram :: (MonadState Counter m, MonadIO m) => Program -> m Program
+  regAllocProgram :: (MonadState CompilerState m, MonadIO m) => Program -> m Program
   regAllocProgram p = do
     defs'      <- mapM regAllocFunDef $ toplevel p
     (main', _) <- regAllocSeq "%g0" Tunit (Ans Inop) [] $ main p

@@ -3,12 +3,12 @@
   #-}
 
 module PatternMatching.NameWildcards (nameWildcards) where
-  import Counters
+  import CompilerState
   import TypedSyntax
 
   import Control.Monad.State
 
-  nameWildcardsPattern :: MonadState Counter m => TypedPattern -> m TypedPattern
+  nameWildcardsPattern :: MonadState CompilerState m => TypedPattern -> m TypedPattern
   nameWildcardsPattern (TPwildcard t)   = do
     v <- freshWildcard t
     return $ TPvar v t
@@ -23,20 +23,20 @@ module PatternMatching.NameWildcards (nameWildcards) where
   nameWildcardsPattern p                =
     return p
 
-  nameWildcardsFunClause :: MonadState Counter m => TypedFunClause ->
+  nameWildcardsFunClause :: MonadState CompilerState m => TypedFunClause ->
                             m TypedFunClause
   nameWildcardsFunClause fc = do
     p' <- mapM nameWildcardsPattern $ tfcArguments fc
     b' <- nameWildcards $ tfcBody fc
     return TFC { tfcArguments = p', tfcBody = b' }
 
-  nameWildcardsCaseClause :: MonadState Counter m => TypedCaseClause ->
+  nameWildcardsCaseClause :: MonadState CompilerState m => TypedCaseClause ->
                              m TypedCaseClause
   nameWildcardsCaseClause cc = do
     b' <- nameWildcards $ tccBody cc
     return cc { tccBody = b' }
 
-  nameWildcards :: MonadState Counter m => TypedExpr -> m TypedExpr
+  nameWildcards :: MonadState CompilerState m => TypedExpr -> m TypedExpr
   nameWildcards (TEfun fcs t)             = do
     fcs' <- mapM nameWildcardsFunClause fcs
     return $ TEfun fcs' t

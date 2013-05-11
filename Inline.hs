@@ -8,11 +8,11 @@ module Inline (inline, defaultTreshold) where
 
   import KNormal.KSyntax
 
-  import Counters
+  import CompilerState
   import Control.Monad.State
 
   defaultTreshold :: Integer
   defaultTreshold = 0
 
-  inline :: (MonadIO m, MonadState Counter m) => Integer -> KExpr -> m KExpr
+  inline :: (MonadIO m, MonadState CompilerState m) => Integer -> KExpr -> m KExpr
   inline = I.inline emptyEnv

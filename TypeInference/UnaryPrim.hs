@@ -3,13 +3,13 @@
   #-}
 
 module TypeInference.UnaryPrim where
-  import Counters
+  import CompilerState
   import Syntax.UnaryPrim
   import Types
 
   import Control.Monad.State
 
-  typeOfUnaryPrim :: MonadState Counter m => UnaryPrim -> m Type
+  typeOfUnaryPrim :: MonadState CompilerState m => UnaryPrim -> m Type
   typeOfUnaryPrim UPnot   = return $ Tfun [Tbool] Tbool
   typeOfUnaryPrim UPref   = do
     v <- freshTypeVar

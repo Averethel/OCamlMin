@@ -3,7 +3,7 @@
   #-}
 
 module PatternMatching.NumbersToIfs (numbersToIfs) where
-  import Counters
+  import CompilerState
   import Syntax
   import TypedSyntax
   import Types
@@ -16,7 +16,7 @@ module PatternMatching.NumbersToIfs (numbersToIfs) where
   mkAnd e1 e2 =
     TEapply (TEbprim (BPand, Tfun [Tbool, Tbool] Tbool)) [e1, e2] Tbool
 
-  numbersToIfsPattern :: MonadState Counter m => TypedPattern ->
+  numbersToIfsPattern :: MonadState CompilerState m => TypedPattern ->
                          m (TypedPattern, TypedExpr)
   numbersToIfsPattern (TPconst n@(Cint _, t)) = do
     a <- freshArg t
@@ -33,20 +33,20 @@ module PatternMatching.NumbersToIfs (numbersToIfs) where
   numbersToIfsPattern p                      =
     return (p, TEconst (Cbool True, Tbool))
 
-  numbersToIfsPatterns :: MonadState Counter m => [TypedPattern] ->
+  numbersToIfsPatterns :: MonadState CompilerState m => [TypedPattern] ->
                           m ([TypedPattern], TypedExpr)
   numbersToIfsPatterns ps = do
     pscs <- mapM numbersToIfsPattern ps
     let (ps', cs) = unzip pscs
     return (ps', foldl mkAnd (TEconst (Cbool True, Tbool)) cs)
 
-  numbersToIfsCaseClause :: MonadState Counter m => TypedCaseClause ->
+  numbersToIfsCaseClause :: MonadState CompilerState m => TypedCaseClause ->
                             m TypedCaseClause
   numbersToIfsCaseClause cc = do
     b' <- numbersToIfs $ tccBody cc
     return cc{ tccBody = b' }
 
-  numbersToIfsFunClause :: MonadState Counter m => TypedFunClause ->
+  numbersToIfsFunClause :: MonadState CompilerState m => TypedFunClause ->
                            m TypedFunClause
   numbersToIfsFunClause fc = do
     (ps, c) <- numbersToIfsPatterns $ tfcArguments fc
@@ -58,7 +58,7 @@ module PatternMatching.NumbersToIfs (numbersToIfs) where
         return fc { tfcArguments = ps,
                     tfcBody = TEif c b' (TEmatchFailure t) t }
 
-  numbersToIfs :: MonadState Counter m => TypedExpr -> m TypedExpr
+  numbersToIfs :: MonadState CompilerState m => TypedExpr -> m TypedExpr
   numbersToIfs (TEfun fcs t)            = do
     fcs' <- mapM numbersToIfsFunClause fcs
     return $ TEfun fcs' t

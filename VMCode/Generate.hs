@@ -4,7 +4,7 @@
 
 module VMCode.Generate where
   import ClosureConvert.CSyntax hiding (C)
-  import Counters
+  import CompilerState
   import Types
 
   import SPARC.Syntax
@@ -17,7 +17,7 @@ module VMCode.Generate where
   toLabel :: (ClosureConvert.CSyntax.Label, Type) -> SPARC.Syntax.Label
   toLabel (ClosureConvert.CSyntax.L s, _) = SPARC.Syntax.L s
 
-  classify :: MonadState Counter m =>
+  classify :: MonadState CompilerState m =>
               [(String, Type)] -> b ->
               (b -> String -> Type -> m b) ->
               m b
@@ -29,7 +29,7 @@ module VMCode.Generate where
       ini
       xts
 
-  expand :: MonadState Counter m =>
+  expand :: MonadState CompilerState m =>
             [(String, Type)] -> (Integer, Seq) ->
             (String -> Type -> Integer -> Seq -> m Seq) -> m (Integer, Seq)
   expand xts ini addi =
@@ -44,7 +44,7 @@ module VMCode.Generate where
   listHeader :: Integer
   listHeader = 4097
 
-  letBlock :: (MonadState Counter m) => SPARC.Syntax.Label ->
+  letBlock :: (MonadState CompilerState m) => SPARC.Syntax.Label ->
               (String, Type) -> (String, Type) -> (String, Type) -> CExpr ->
               m Seq
   letBlock l s1 s2 s3 e = do
@@ -59,7 +59,7 @@ module VMCode.Generate where
               else Let x t (Ild (fst s3) (C offset)) load)
     return load
 
-  translateExpr :: (MonadState Counter m) =>
+  translateExpr :: (MonadState CompilerState m) =>
                    SPARC.Syntax.Label -> CExpr -> m Seq
   translateExpr _ (CEunit _) =
     return $ Ans Inop
@@ -162,7 +162,7 @@ module VMCode.Generate where
   translateExpr l e =
     assert False $ translateExpr l e
 
-  translateFunDef :: (MonadState Counter m) =>
+  translateFunDef :: (MonadState CompilerState m) =>
                      SPARC.Syntax.Label -> ClosureConvert.CSyntax.FunDef ->
                      m SPARC.Syntax.FunDef
   translateFunDef l fd = do
@@ -180,7 +180,7 @@ module VMCode.Generate where
       SPARC.Syntax.ret   = t2
     }
 
-  translateProgram :: (MonadState Counter m) =>
+  translateProgram :: (MonadState CompilerState m) =>
                       ClosureConvert.CSyntax.Program ->
                       m SPARC.Syntax.Program
   translateProgram p = do

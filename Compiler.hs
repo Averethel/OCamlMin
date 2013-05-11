@@ -21,10 +21,10 @@ module Compiler where
   import VMCode
   import Emit
 
-  import Counters
+  import CompilerState
   import Control.Monad.State
 
-  compiler :: (MonadIO m, MonadState Counter m) =>
+  compiler :: (MonadIO m, MonadState CompilerState m) =>
               Integer -> TypedExpr -> m Prog
   compiler t e0 = do
     e1     <- compilePatternMatching e0
@@ -41,7 +41,7 @@ module Compiler where
     e12    <- regAllocProgram e11
     emitProgram e12
 
-  compile :: (MonadIO m, MonadState Counter m) =>
+  compile :: (MonadIO m, MonadState CompilerState m) =>
              Integer -> Expr -> m (Either String Prog)
   compile inlineTreshold expr = do
     tp <- typeOfExpression emptyEnv expr

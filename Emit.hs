@@ -9,14 +9,14 @@ module Emit where
 
   import Types
 
-  import Counters
+  import CompilerState
   import Control.Exception.Base
   import Control.Monad.State
   import Data.Set (insert, member, intersection)
   import Data.List (partition)
   import Data.List.Utils
 
-  save :: MonadState Counter m => String -> m ()
+  save :: MonadState CompilerState m => String -> m ()
   save x = do
     s <- get
     let s' = if x `elem` stackMap s
@@ -24,7 +24,7 @@ module Emit where
               else s{ stackMap = stackMap s ++ [x] }
     put s'{ stackSet = x `insert` stackSet s' }
 
-  savef :: MonadState Counter m => String -> m ()
+  savef :: MonadState CompilerState m => String -> m ()
   savef x = do
     s   <- get
     pad <- if length (stackMap s) `mod` 2 == 0
@@ -43,17 +43,17 @@ module Emit where
     | x == y      = 0 : map succ (loc x ys)
     | otherwise   = map succ $ loc x ys
 
-  locate :: MonadState Counter m => String -> m [Integer]
+  locate :: MonadState CompilerState m => String -> m [Integer]
   locate x = do
     m <- getC stackMap
     return $ loc x m
 
-  offset :: MonadState Counter m => String -> m Integer
+  offset :: MonadState CompilerState m => String -> m Integer
   offset x = do
     ls <- locate x
     return $ 4 * head ls
 
-  stackSize :: MonadState Counter m => m Integer
+  stackSize :: MonadState CompilerState m => m Integer
   stackSize = do
     m <- getC stackMap
     return $ align (toInteger (length m + 1) * 4)
@@ -74,7 +74,7 @@ module Emit where
     | NonTail String
     deriving Eq
 
-  emitSeq :: MonadState Counter m => CallType -> Seq -> m [Instruction]
+  emitSeq :: MonadState CompilerState m => CallType -> Seq -> m [Instruction]
   emitSeq ct (Ans i)        =
     emitInstr ct i
   emitSeq ct (Let x _ i s)  = do
@@ -85,28 +85,28 @@ module Emit where
     (h:t) <- emitSeq ct s
     return $ Lab l h : t
 
-  tailUnit :: MonadState Counter m => Instr -> m [Instruction]
+  tailUnit :: MonadState CompilerState m => Instr -> m [Instruction]
   tailUnit e = do
     s   <- freshName $ '_' : genId Tunit
     res <- emitInstr (NonTail s) e
     return $ res ++ [RetL, Nop]
 
-  tailSimpleInt :: MonadState Counter m => Instr -> m [Instruction]
+  tailSimpleInt :: MonadState CompilerState m => Instr -> m [Instruction]
   tailSimpleInt i = do
     res <- emitInstr (NonTail $ head regs) i
     return $ res ++ [RetL, Nop]
 
-  tailSimpleFloat :: MonadState Counter m => Instr -> m [Instruction]
+  tailSimpleFloat :: MonadState CompilerState m => Instr -> m [Instruction]
   tailSimpleFloat i = do
       res <- emitInstr (NonTail $ head fregs) i
       return $ res ++ [RetL, Nop]
 
-  restoreStacksetIf :: MonadState Counter m => StackSet -> m ()
+  restoreStacksetIf :: MonadState CompilerState m => StackSet -> m ()
   restoreStacksetIf stackSetB = do
     s <- get
     put s{ stackSet = stackSetB }
 
-  tailIf :: MonadState Counter m => Seq -> Seq -> String ->
+  tailIf :: MonadState CompilerState m => Seq -> Seq -> String ->
             (Label -> Instruction) -> m [Instruction]
   tailIf e1 e2 l bn = do
     bElse <- freshName $ l ++ "_else"
@@ -117,7 +117,7 @@ module Emit where
 
     return $ bn (L bElse) : Nop : b1 ++ Lab (L bElse) Nop : b2
 
-  nonTailIf :: MonadState Counter m => CallType -> Seq -> Seq -> String ->
+  nonTailIf :: MonadState CompilerState m => CallType -> Seq -> Seq -> String ->
                (Label -> Instruction) -> m [Instruction]
   nonTailIf dest e1 e2 b bn = do
     bElse <- freshName $ b ++ "_else"
@@ -132,7 +132,7 @@ module Emit where
     put s{ stackSet = stackSet1 `intersection` stackSet2 }
     return $ bn (L bElse) : Nop : b1 ++ B (L bCont) : Lab (L bElse) Nop : b2 ++ [Lab (L bCont) Nop]
 
-  nonTailApp :: MonadState Counter m => Integer -> String -> m [Instruction]
+  nonTailApp :: MonadState CompilerState m => Integer -> String -> m [Instruction]
   nonTailApp size a = do
     let rest
           | a `elem` regs && a /= head regs   = [ Mov (head regs) a ]
@@ -140,7 +140,7 @@ module Emit where
           | otherwise                         = []
     return $ Add regSp (C size) regSp : Sub regSp (C size) regSp : Ld (V regSp :+: C (size - 4)) regRa : rest
 
-  emitArgs :: MonadState Counter m => Maybe String -> [String] -> [String] ->
+  emitArgs :: MonadState CompilerState m => Maybe String -> [String] -> [String] ->
               m [Instruction]
   emitArgs mx ys zs = do
     let xrc = case mx of
@@ -152,7 +152,7 @@ module Emit where
     let frs = concatMap (\(z, fr) -> [ FmovS z fr, FmovS (coFreg z) $ coFreg fr ]) $ shuffle regFsw zfrs
     return $ rs ++ frs
 
-  emitInstr :: MonadState Counter m => CallType -> Instr -> m [Instruction]
+  emitInstr :: MonadState CompilerState m => CallType -> Instr -> m [Instruction]
   emitInstr (NonTail _) Inop     =
     return []
   emitInstr (NonTail x) (Iset i) =
@@ -329,14 +329,14 @@ module Emit where
   emitInstr _ (Ijump l) =
     return [B l]
 
-  emitFunDef :: MonadState Counter m => FunDef -> m Function
+  emitFunDef :: MonadState CompilerState m => FunDef -> m Function
   emitFunDef (FD { name = l, body = e }) = do
     s <- get
     put s{ stackSet = emptyStackSet, stackMap = emptyStackMap }
     b <- emitSeq Tail e
     return F{ label = l, fBody = b }
 
-  emitProgram :: (MonadIO m, MonadState Counter m) => Program -> m Prog
+  emitProgram :: (MonadIO m, MonadState CompilerState m) => Program -> m Prog
   emitProgram (P funDefs e) = do
     liftIO $ putStrLn "generating assembly...@."
     -- after adding float data section needs to be here

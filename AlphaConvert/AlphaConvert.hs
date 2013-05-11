@@ -6,13 +6,13 @@ module AlphaConvert.AlphaConvert (alphaConvert) where
   import AlphaConvert.Env
   import KNormal.KSyntax
 
-  import Counters
+  import CompilerState
   import Types
 
   import Control.Arrow
   import Control.Monad.State
 
-  convertLet :: MonadState Counter m => Env ->
+  convertLet :: MonadState CompilerState m => Env ->
                 ((String, Type) -> (String, Type) -> (String, Type) -> KExpr ->
                 Type -> KExpr) -> (String, Type) -> (String, Type) ->
                 (String, Type) -> KExpr -> Type -> m KExpr
@@ -22,7 +22,7 @@ module AlphaConvert.AlphaConvert (alphaConvert) where
     e'  <- alphaConvert (extend (extend env s1 x1') s2 x2') e
     return $ letC (x1', t1) (x2', t2) (env `find` s3, t3) e' t
 
-  alphaConvert :: MonadState Counter m => Env -> KExpr -> m KExpr
+  alphaConvert :: MonadState CompilerState m => Env -> KExpr -> m KExpr
   alphaConvert env (KEneg (s, t1) t2)                     =
     return $ KEneg (env `find` s, t1) t2
   alphaConvert env (KEload (s, t1) t2)                    =

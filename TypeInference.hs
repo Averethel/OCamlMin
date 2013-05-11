@@ -6,7 +6,7 @@ module TypeInference (
   typeOfExpression,
   emptyEnv
 ) where
-  import Counters
+  import CompilerState
   import Syntax
   import TypedSyntax
 
@@ -17,7 +17,7 @@ module TypeInference (
   import Control.Monad.Error
   import Control.Monad.State
 
-  typeOfExpression :: MonadState Counter m => Env -> Expr -> m (Either String TypedExpr)
+  typeOfExpression :: MonadState CompilerState m => Env -> Expr -> m (Either String TypedExpr)
   typeOfExpression env e = do
     errOrRes <- runErrorT $ typeOfExpr env emptyConstraints e
     return $ case errOrRes of

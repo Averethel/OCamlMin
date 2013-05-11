@@ -3,12 +3,12 @@
   #-}
 
 module VMCode (generateVMCode) where
-  import Counters
+  import CompilerState
   import qualified ClosureConvert.CSyntax as C
   import VMCode.Generate
   import qualified SPARC.Syntax as S
 
   import Control.Monad.State
 
-  generateVMCode :: MonadState Counter m => C.Program -> m S.Program
+  generateVMCode :: MonadState CompilerState m => C.Program -> m S.Program
   generateVMCode = translateProgram

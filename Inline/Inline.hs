@@ -8,11 +8,11 @@ module Inline.Inline where
 
   import KNormal.KSyntax
   import AlphaConvert
-  import Counters
+  import CompilerState
 
   import Control.Monad.State
 
-  inline :: (MonadIO m, MonadState Counter m) =>
+  inline :: (MonadIO m, MonadState CompilerState m) =>
             Env -> Integer -> KExpr -> m KExpr
   inline env trs (KEifEq s1 s2 e1 e2 t)   = do
     e1' <- inline env trs e1

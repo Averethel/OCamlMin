@@ -3,7 +3,7 @@
   #-}
 
 module SPARC.Utils where
-  import Counters
+  import CompilerState
   import SPARC.Syntax
   import Types
 
@@ -16,12 +16,12 @@ module SPARC.Utils where
   concat (Let y t e e1) x tx e2 = Let y t e $ SPARC.Utils.concat e1 x tx e2
   concat (Labeled l e1) x tx e2 = Labeled l $ SPARC.Utils.concat e1 x tx e2
 
-  instrSeq :: MonadState Counter m => Instr -> Seq -> m Seq
+  instrSeq :: MonadState CompilerState m => Instr -> Seq -> m Seq
   instrSeq i e = do
     idf <- freshName $ genId Tunit
     return $ Let idf Tunit i e
 
-  buildSeq :: MonadState Counter m => Seq -> Seq -> m Seq
+  buildSeq :: MonadState CompilerState m => Seq -> Seq -> m Seq
   buildSeq (Ans i) e2         = instrSeq i e2
   buildSeq (Let x t i e1) e2  = do
     e1' <- buildSeq e1 e2

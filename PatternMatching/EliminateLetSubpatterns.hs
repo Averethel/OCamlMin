@@ -3,7 +3,7 @@
   #-}
 
 module PatternMatching.EliminateLetSubpatterns (eliminateLetSubPatterns) where
-  import Counters
+  import CompilerState
   import TypedSyntax.Expr
   import TypedSyntax.Pattern
 
@@ -11,14 +11,14 @@ module PatternMatching.EliminateLetSubpatterns (eliminateLetSubPatterns) where
 
   import Control.Monad.State
 
-  getSubPatterns :: MonadState Counter m =>
+  getSubPatterns :: MonadState CompilerState m =>
                     TypedPattern -> TypedExpr ->
                     m [(TypedPattern, TypedExpr)]
   getSubPatterns (TPpair p1 p2 t) e = getSubPatterns' TPpair p1 p2 t e
   getSubPatterns (TPcons p1 p2 t) e = getSubPatterns' TPcons p1 p2 t e
   getSubPatterns p                e = return [(p, e)]
 
-  getSubPatterns' :: MonadState Counter m =>
+  getSubPatterns' :: MonadState CompilerState m =>
                      (TypedPattern -> TypedPattern -> Type -> TypedPattern) ->
                      TypedPattern -> TypedPattern -> Type -> TypedExpr ->
                      m [(TypedPattern, TypedExpr)]
@@ -46,19 +46,19 @@ module PatternMatching.EliminateLetSubpatterns (eliminateLetSubPatterns) where
       ps2 <- getSubPatterns p2 (TEvar v2 t2')
       return $ (cons (TPvar v1 t1') (TPvar v2 t2') t, e) : (ps1 ++ ps2)
 
-  eliminateLetSubPatternsFunClause :: MonadState Counter m =>
+  eliminateLetSubPatternsFunClause :: MonadState CompilerState m =>
                                       TypedFunClause -> m TypedFunClause
   eliminateLetSubPatternsFunClause fc = do
     b' <- eliminateLetSubPatterns $ tfcBody fc
     return fc{ tfcBody = b' }
 
-  eliminateLetSubPatternsCaseClause :: MonadState Counter m =>
+  eliminateLetSubPatternsCaseClause :: MonadState CompilerState m =>
                                        TypedCaseClause -> m TypedCaseClause
   eliminateLetSubPatternsCaseClause cc = do
     b' <- eliminateLetSubPatterns $ tccBody cc
     return cc{ tccBody = b' }
 
-  eliminateLetSubPatterns :: MonadState Counter m => TypedExpr -> m TypedExpr
+  eliminateLetSubPatterns :: MonadState CompilerState m => TypedExpr -> m TypedExpr
   eliminateLetSubPatterns (TEfun fcs t)             = do
     fcs' <- mapM eliminateLetSubPatternsFunClause fcs
     return $ TEfun fcs' t
