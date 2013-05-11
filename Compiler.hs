@@ -14,17 +14,18 @@ module Compiler where
   import LetFlatten
   import PatternMatching
   import RegAlloc
-  import qualified SPARC.Syntax as S
+  import SPARC.Syntax
   import Syntax
   import TypedSyntax
   import TypeInference
   import VMCode
+  import Emit
 
   import Counters
   import Control.Monad.State
 
   compiler :: (MonadIO m, MonadState Counter m) =>
-              Integer -> TypedExpr -> m S.Program
+              Integer -> TypedExpr -> m Prog
   compiler t e0 = do
     e1     <- compilePatternMatching e0
     e2     <- convertToKNormal e1
@@ -37,10 +38,11 @@ module Compiler where
     e9     <- liftIO $ closureConvert e8
     e10    <- generateVMCode e9
     e11    <- liftIO $ optimizeProgram e10
-    regAllocProgram e11
+    e12    <- regAllocProgram e11
+    emitProgram e12
 
   compile :: (MonadIO m, MonadState Counter m) =>
-             Integer -> Expr -> m (Either String S.Program)
+             Integer -> Expr -> m (Either String Prog)
   compile inlineTreshold expr = do
     tp <- typeOfExpression emptyEnv expr
     case tp of
