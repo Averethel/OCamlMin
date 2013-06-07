@@ -25,7 +25,7 @@ module KNormal.KNormalize (kNormalize) where
     return $ KElet (x, t) e e' $ typeOfKExpr e'
 
   kNormalizeConstant :: TypedConstant -> KExpr
-  kNormalizeConstant (Cint n, t)   = KEint n t
+  kNormalizeConstant (Cint n, t)   = KEint (2 * n + 1) t
   kNormalizeConstant (Cbool b, _)  = KEint (if b then 1 else 0) Tint
   kNormalizeConstant (Cnil, t)     = KEnil t
   kNormalizeConstant (Cunit, t)    = KEunit t
@@ -52,7 +52,9 @@ module KNormal.KNormalize (kNormalize) where
   kNormalizeUPrim (UPminus, t) e = do
     let Tfun [_] t1 = t
     e' <- kNormalize e
-    insertLet e' (\x t' -> return $ KEneg (x, t') t1)
+    v  <- freshKVar Tint
+    insertLet e' (\x t' ->
+      return $ KElet (v, Tint) (KEint 2 Tint) (KEsub (v, Tint) (x, t') t1) t1)
 
   kNormalizeOp :: MonadState CompilerState m =>
                   ((String, Type) -> (String, Type) -> Type -> KExpr) ->
@@ -63,6 +65,70 @@ module KNormal.KNormalize (kNormalize) where
     insertLet e1' (\x1 t1 -> do {
       e2' <- kNormalize e2;
       insertLet e2' (\x2 t2 -> return $ op (x1, t1) (x2, t2) t' )})
+
+  kNormalizeAdd :: MonadState CompilerState m =>
+                   Type -> TypedExpr -> TypedExpr -> m KExpr
+  kNormalizeAdd t e1 e2 = do
+    e' <- kNormalizeOp KEadd t e1 e2
+    let tp = typeOfKExpr e'
+    x <- freshKVar Tint
+    y <- freshKVar tp
+    return $
+      KElet (x, Tint) (KEint 1 Tint) (
+        KElet (y, tp) e' (KEsub (y, tp) (x, Tint) tp) tp) tp
+
+  kNormalizeSub :: MonadState CompilerState m =>
+                   Type -> TypedExpr -> TypedExpr -> m KExpr
+  kNormalizeSub t e1 e2 = do
+    e' <- kNormalizeOp KEsub t e1 e2
+    let tp = typeOfKExpr e'
+    x <- freshKVar Tint
+    y <- freshKVar tp
+    return $
+      KElet (x, Tint) (KEint 1 Tint) (
+        KElet (y, tp) e' (KEadd (y, tp) (x, Tint) tp) tp) tp
+
+  kNormalizeMult :: MonadState CompilerState m => TypedExpr -> TypedExpr -> m KExpr
+  kNormalizeMult e1 e2 = do
+    e1' <- kNormalize e1
+    insertLet e1' (\y1 t1 -> do {
+      e2' <- kNormalize e2;
+      insertLet e2' (\y2 t2 -> do {
+        x1 <- freshKVar Tint;
+        x2 <- freshKVar Tint;
+        n  <- freshKVar t1;
+        m  <- freshKVar t2;
+        mn <- freshKVar t2;
+        return $
+          KElet (x2, Tint) (KEint 2 Tint) (
+            KElet (x1, Tint) (KEint 1 Tint) (
+              KElet (n, t1) (KEsub (y1, t1) (x2, Tint) t1) (
+                KElet (m, t2) (KEdiv (y2, t2) (x2, Tint) t2) (
+                  KElet (mn, t2) (KEmult (n, t1) (m, t2) t2) (
+                    KEadd (mn, t2) (x1, Tint) t2) t2) t2) t2) t2) t2
+      })
+    })
+
+  kNormalizeDiv :: MonadState CompilerState m => TypedExpr -> TypedExpr -> m KExpr
+  kNormalizeDiv e1 e2 = do
+    e1' <- kNormalize e1
+    insertLet e1' (\y1 t1 -> do {
+      e2' <- kNormalize e2;
+      insertLet e2' (\y2 t2 -> do {
+        x1 <- freshKVar Tint;
+        x2 <- freshKVar Tint;
+        n  <- freshKVar t1;
+        m  <- freshKVar t2;
+        mn <- freshKVar t2;
+        return $
+          KElet (x2, Tint) (KEint 2 Tint) (
+            KElet (x1, Tint) (KEint 1 Tint) (
+              KElet (n, t1) (KEsub (y1, t1) (x2, Tint) t1) (
+                KElet (m, t2) (KEdiv (y2, t2) (x2, Tint) t2) (
+                  KElet (mn, t2) (KEdiv (n, t1) (m, t2) t2) (
+                    KEadd (mn, t2) (x1, Tint) t2) t2) t2) t2) t2) t2
+      })
+    })
 
   kNormalizeBPrim :: MonadState CompilerState m =>
                      TypedBinaryPrim -> TypedExpr -> TypedExpr -> m KExpr
@@ -101,26 +167,37 @@ module KNormal.KNormalize (kNormalize) where
       return $ KElet (v, Tint) (KEint 1 Tint)
                 (KEifEq (x, t) (v, Tint) e2' (KEint 0 Tint) Tint) Tint })
   kNormalizeBPrim (BPadd, t)    e1 e2  =
-    kNormalizeOp KEadd t e1 e2
+    kNormalizeAdd t e1 e2
   kNormalizeBPrim (BPsub, t)    e1 e2  =
-    kNormalizeOp KEsub t e1 e2
+    kNormalizeSub t e1 e2
   kNormalizeBPrim (BPmult, t)   e1 e2  =
-    kNormalizeOp KEmult t e1 e2
+    kNormalizeMult e1 e2
   kNormalizeBPrim (BPdiv, t)    e1 e2  =
-    kNormalizeOp KEdiv t e1 e2
+    kNormalizeDiv e1 e2
   kNormalizeBPrim (BPmod, t)    e1 e2  = do
+    let Tfun [_, _] t' = t
     e1' <- kNormalize e1
-    e2' <- kNormalize e2
-    let Tfun [t1, t2] t3 = t
-    x1  <- freshKVar t1
-    x2  <- freshKVar t2
-    x3  <- freshKVar t3
-    x4  <- freshKVar t3
-    return $ KElet (x1, t1) e1' (
-              KElet (x2, t2) e2' (
-                KElet (x3, t3) (KEdiv (x1, t1) (x2, t2) t3) (
-                 KElet (x4, t3) (KEmult (x3, t3) (x2, t2) t3)
-                   (KEsub (x3, t3) (x4, t3) t3) t3) t3) t3) t3
+    insertLet e1' (\y1 t1 -> do {
+      e2' <- kNormalize e2;
+      insertLet e2' (\y2 t2 -> do {
+        x1   <- freshKVar Tint;
+        x2   <- freshKVar Tint;
+        n1   <- freshKVar t1;
+        m1   <- freshKVar t2;
+        mn   <- freshKVar t2;
+        mn1  <- freshKVar t2;
+        mn1n <- freshKVar t2;
+        return $
+          KElet (x1, Tint) (KEint 1 Tint) (
+            KElet (x2, Tint) (KEint 2 Tint) (
+              KElet (n1, t1) (KEsub (y1, t1) (x2, Tint) t1) (
+                KElet (m1, t2) (KEdiv (y2, t2) (x2, Tint) t2) (
+                  KElet (mn, t2) (KEdiv (n1, t1) (m1, t2) t2) (
+                    KElet (mn1, t2) (KEsub (mn, t2) (x1, Tint) t2) (
+                      KElet (mn1n, t2) (KEmult (mn1, t2) (m1, t2) t2) (
+                        KEsub (y1, t1) (mn1n, t2) t') t') t') t') t') t') t') t'
+      })
+    })
   kNormalizeBPrim (BPassign, t) e1 e2  =
     kNormalizeOp KEstore t e1 e2
 
