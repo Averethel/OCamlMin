@@ -3,7 +3,7 @@
   #-}
 
 module RegAlloc.Alloc where
-  import Prelude hiding (catch)
+  import Prelude
 
   import RegAlloc.Env
   import RegAlloc.Targetting
