@@ -55,3 +55,39 @@ module RegAlloc.Targetting where
       (c2, rs2) = target src dest r e
   target src dest t (Labeled _ e) =
     target src dest t e
+
+  source :: Type -> Seq -> [String]
+  source t (Ans e)       = sourceInstr t e
+  source t (Let _ _ _ s) = source t s
+  source t (Labeled _ s) = source t s
+
+  sourceInstr :: Type -> Instr -> [String]
+  sourceInstr _ (Imov x)            = [ x ]
+  sourceInstr _ (Ineg x)            = [ x ]
+  sourceInstr _ (Iadd x (C _))      = [ x ]
+  sourceInstr _ (Isub x _)          = [ x ]
+  sourceInstr _ (ISmul x _)         = [ x ]
+  sourceInstr _ (ISdiv x _)         = [ x ]
+  sourceInstr _ (IfMovD x)          = [ x ]
+  sourceInstr _ (IfNegD x)          = [ x ]
+  sourceInstr _ (IfSubD x _)        = [ x ]
+  sourceInstr _ (IfDivD x _)        = [ x ]
+  sourceInstr _ (Iadd x (V y))      = [ x, y ]
+  sourceInstr _ (IfAddD x y)        = [ x, y ]
+  sourceInstr _ (IfMulD x y)        = [ x, y ]
+  sourceInstr t (IifEq _ _ e1 e2)   = source t e1 ++ source t e2
+  sourceInstr t (IifLE _ _ e1 e2)   = source t e1 ++ source t e2
+  sourceInstr t (IifGE _ _ e1 e2)   = source t e1 ++ source t e2
+  sourceInstr t (IifFEq _ _ e1 e2)  = source t e1 ++ source t e2
+  sourceInstr t (IifFLE _ _ e1 e2)  = source t e1 ++ source t e2
+  sourceInstr t (IcallCls{})        =
+    case t of
+      Tunit                        -> []
+      Tfloat                       -> [ head fregs ]
+      _                            -> [ head regs ]
+  sourceInstr t (IcallDir{})        =
+    case t of
+      Tunit                        -> []
+      Tfloat                       -> [ head fregs ]
+      _                            -> [ head regs ]
+  sourceInstr _ _                   = []
