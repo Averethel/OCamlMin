@@ -7,8 +7,8 @@ module RegAlloc.Alloc where
 
   import RegAlloc.Env
   import RegAlloc.Targetting
-  import SPARC.Syntax
-  import SPARC.Utils
+  import X86.Syntax
+  import X86.Utils
   import Types
 
   import CompilerState

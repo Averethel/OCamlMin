@@ -3,8 +3,8 @@
   #-}
 
 module RegAlloc (regAllocProgram) where
-  import SPARC.Syntax
-  import SPARC.Utils
+  import X86.Syntax
+  import X86.Utils
   import Types
 
   import RegAlloc.Alloc
