@@ -5,6 +5,8 @@ Implementation of OCamlMin language based on min-caml project.
 
 Changelog
 =========
+* 4 IX 2013
+  * Rewritten code emission to x86 assembly
 * 5 VII 2013
   * Rewritten register allocation to use x86 assembly
 * 22 VI 2013
