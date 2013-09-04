@@ -13,7 +13,7 @@ module X86.Syntax.Virtual where
 
   instance Show IdOrImm where
     show (V s) = s
-    show (C n) = show n
+    show (C n) = '$' : show n
 
   -- Instruction sequence
   data Seq =
