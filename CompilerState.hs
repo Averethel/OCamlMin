@@ -4,7 +4,7 @@
 
 module CompilerState where
   import Types
-  import SPARC.Syntax
+  import X86.Syntax
 
   import Control.Monad.State
   import Data.Map (Map, fromList, (!))

@@ -3,12 +3,12 @@
   #-}
 
 module RegAlloc.Alloc where
-  import Prelude hiding (catch)
+  import Prelude
 
   import RegAlloc.Env
   import RegAlloc.Targetting
-  import SPARC.Syntax
-  import SPARC.Utils
+  import X86.Syntax
+  import X86.Utils
   import Types
 
   import CompilerState
@@ -25,11 +25,11 @@ module RegAlloc.Alloc where
     | Spill String -- spilled variable
 
 
-  alloc :: (MonadState CompilerState m, MonadIO m) => String -> Type -> Seq -> Env ->
-           String -> Type -> m AllocResult
-  alloc _    _ _    regenv x Tunit =
-    assert (not $ x `hasKeyAL` regenv) $ return $ Alloc "%g0"
-  alloc dest t cont regenv x tp
+  alloc :: (MonadState CompilerState m, MonadIO m) => Seq -> Env -> String ->
+            Type -> [String] -> m AllocResult
+  alloc _    regenv x Tunit _ =
+    assert (not $ x `hasKeyAL` regenv) $ return $ Alloc "%unit"
+  alloc cont regenv x tp prefer
     | isReg x                      =
       assert (not $ x `hasKeyAL` regenv) $ return $ Alloc x
     | otherwise                    = assert (not $ x `hasKeyAL` regenv) $ do
@@ -37,7 +37,6 @@ module RegAlloc.Alloc where
                     Tfloat -> fregs
                     _      -> regs
       let fvs = freeVars cont
-      let (_, prefer) = target x dest t cont
       let live = foldl (\l y -> if isReg y then y `insert` l else case y `lookup` regenv of
             Nothing -> l
             Just r  -> r `insert` l) empty fvs
@@ -60,9 +59,11 @@ module RegAlloc.Alloc where
     regAllocInstrAndRestore dest t cont regenv i
   regAllocSeq dest t cont regenv (Let x tx i s) =
     assert (not $ x `hasKeyAL` regenv) $ do
-      let cont'      = SPARC.Utils.concat s dest t cont
-      (s1, regenv') <- regAllocInstrAndRestore x tx cont' regenv i
-      allocRes      <- alloc dest t cont' regenv' x tx
+      let cont'        = X86.Utils.concat s dest t cont
+      (s1, regenv')   <- regAllocInstrAndRestore x tx cont' regenv i
+      let (_, targets) = target x dest t cont'
+      let sources      = source tx s1
+      allocRes        <- alloc cont' regenv' x tx $ targets ++ sources
       case allocRes of
         Spill y -> do
           let Just r      = y `lookup` regenv'
@@ -70,11 +71,11 @@ module RegAlloc.Alloc where
           let save = case y `lookup` regenv of
                         Nothing -> Inop
                         Just rg -> Isave rg y
-          seq' <- instrSeq save $ SPARC.Utils.concat s1 r tx s2
+          seq' <- instrSeq save $ X86.Utils.concat s1 r tx s2
           return (seq', regenv'')
         Alloc r -> do
           (s2, regenv'') <- regAllocSeq dest t cont (addToAL regenv' x r) s
-          return (SPARC.Utils.concat s1 r tx s2, regenv'')
+          return (X86.Utils.concat s1 r tx s2, regenv'')
   regAllocSeq dest t cont regenv (Labeled l s)  = do
     (s', regenv') <- regAllocSeq dest t cont regenv s
     return (Labeled l s', regenv')
@@ -133,10 +134,10 @@ module RegAlloc.Alloc where
     regAllocDoubleArgInt Isub x y regenv
   regAllocInstr _    _ _    regenv (ISLL x y)           =
     regAllocDoubleArgInt ISLL x y regenv
-  regAllocInstr _    _ _    regenv (Ild x y)            =
-    regAllocDoubleArgInt Ild x y regenv
-  regAllocInstr _    _ _    regenv (Ist x y z)          =
-    regAllocTripleArg Tint Tint Ist x y z regenv
+  regAllocInstr _    _ _    regenv (Ild x y i)          =
+    regAllocDoubleArgInt (\a b -> Ild a b i) x y regenv
+  regAllocInstr _    _ _    regenv (Ist x y z i)        =
+    regAllocTripleArg Tint Tint (\a b c -> Ist a b c i) x y z regenv
   regAllocInstr _    _ _    regenv (IfMovD x)           =
     regAllocSingleArg Tfloat IfMovD x regenv
   regAllocInstr _    _ _    regenv (IfNegD x)           =
@@ -149,10 +150,10 @@ module RegAlloc.Alloc where
     regAllocDoubleArgFloat IfMulD x y regenv
   regAllocInstr _    _ _    regenv (IfDivD x y)         =
     regAllocDoubleArgFloat IfDivD x y regenv
-  regAllocInstr _    _ _    regenv (IldDF x y)          =
-    regAllocDoubleArgInt IldDF x y regenv
-  regAllocInstr _    _ _    regenv (IstDF x y z)        =
-    regAllocTripleArg Tfloat Tint IstDF x y z regenv
+  regAllocInstr _    _ _    regenv (IldDF x y i)        =
+    regAllocDoubleArgInt (\a b -> IldDF a b i) x y regenv
+  regAllocInstr _    _ _    regenv (IstDF x y z i)      =
+    regAllocTripleArg Tfloat Tint (\a b c -> IstDF a b c i) x y z regenv
   regAllocInstr dest t cont regenv (IifEq x y e1 e2)  =
     regAllocIf dest t cont regenv (\e1' e2' -> do {
       x' <- envFind x Tint regenv;

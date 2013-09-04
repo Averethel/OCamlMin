@@ -3,8 +3,8 @@
   #-}
 
 module RegAlloc (regAllocProgram) where
-  import SPARC.Syntax
-  import SPARC.Utils
+  import X86.Syntax
+  import X86.Utils
   import Types
 
   import RegAlloc.Alloc
@@ -36,5 +36,6 @@ module RegAlloc (regAllocProgram) where
   regAllocProgram :: (MonadState CompilerState m, MonadIO m) => Program -> m Program
   regAllocProgram p = do
     defs'      <- mapM regAllocFunDef $ toplevel p
-    (main', _) <- regAllocSeq "%g0" Tunit (Ans Inop) [] $ main p
+    n          <- freshName $ genId Tunit
+    (main', _) <- regAllocSeq n Tunit (Ans Inop) [] $ main p
     return $ p{ toplevel = defs', main = main' }

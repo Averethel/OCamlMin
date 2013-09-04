@@ -2,19 +2,19 @@
   FlexibleContexts
   #-}
 
-module SPARC.Utils where
+module X86.Utils where
   import CompilerState
-  import SPARC.Syntax
+  import X86.Syntax
   import Types
 
   import Control.Monad.State
-  import Data.Maybe (fromJust)
+  --import Data.Maybe (fromJust)
   import Data.Set
 
   concat :: Seq -> String  -> Type -> Seq -> Seq
   concat (Ans e1)       x tx e2 = Let x tx e1 e2
-  concat (Let y t e e1) x tx e2 = Let y t e $ SPARC.Utils.concat e1 x tx e2
-  concat (Labeled l e1) x tx e2 = Labeled l $ SPARC.Utils.concat e1 x tx e2
+  concat (Let y t e e1) x tx e2 = Let y t e $ X86.Utils.concat e1 x tx e2
+  concat (Labeled l e1) x tx e2 = Labeled l $ X86.Utils.concat e1 x tx e2
 
   instrSeq :: MonadState CompilerState m => Instr -> Seq -> m Seq
   instrSeq i e = do
@@ -33,7 +33,7 @@ module SPARC.Utils where
   align :: Integer -> Integer
   align i
     | i `mod` 8 == 0 = i
-    | otherwise    = i + 4
+    | otherwise      = i + 4
 
   removeAndUniq :: Set String -> [String] -> [String]
   removeAndUniq _ []     = []
@@ -54,10 +54,10 @@ module SPARC.Utils where
   fvInstr (Iadd x y')         = x : fvIdOrImm y'
   fvInstr (Isub x y')         = x : fvIdOrImm y'
   fvInstr (ISLL x y')         = x : fvIdOrImm y'
-  fvInstr (Ild x y')          = x : fvIdOrImm y'
-  fvInstr (IldDF x y')        = x : fvIdOrImm y'
-  fvInstr (Ist x y z')        = x : y : fvIdOrImm z'
-  fvInstr (IstDF x y z')      = x : y : fvIdOrImm z'
+  fvInstr (Ild x y' _)        = x : fvIdOrImm y'
+  fvInstr (IldDF x y' _)      = x : fvIdOrImm y'
+  fvInstr (Ist x y z' _)      = x : y : fvIdOrImm z'
+  fvInstr (IstDF x y z' _)    = x : y : fvIdOrImm z'
   fvInstr (IfAddD x y)        = [x, y]
   fvInstr (IfSubD x y)        = [x, y]
   fvInstr (IfMulD x y)        = [x, y]
@@ -81,7 +81,7 @@ module SPARC.Utils where
 
   isReg :: String -> Bool
   isReg ('%':_) = True
-  isReg _       = False
+  isReg x       = x == regHp
 
-  coFreg :: String -> String
-  coFreg = fromJust . flip lookup coFregs
+  --coFreg :: String -> String
+  --coFreg = fromJust . flip lookup coFregs

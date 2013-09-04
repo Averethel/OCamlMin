@@ -1,6 +1,6 @@
 module Immidiate (optimizeProgram) where
-  import SPARC.Syntax
-  import SPARC.Utils
+  import X86.Syntax
+  import X86.Utils
 
   import Data.Bits
   import Data.Maybe
@@ -20,15 +20,14 @@ module Immidiate (optimizeProgram) where
   optimizeSeq env (Ans i)    = do
     i' <- optimizeInstr env i
     return $ Ans i'
-  optimizeSeq env (Let x t (Iset n) e)
-    | -4096 <= n && n < 4096 = do
-      putStrLn $ "found simm13 " ++ show x ++ " = " ++ show n ++ "."
-      e' <- optimizeSeq ((x, n):env) e
-      if x `elem` freeVars e'
-      then return $ Let x t (Iset n) e'
-      else do
-        putStrLn $ "erased redundant Set to " ++ show x
-        return e'
+  optimizeSeq env (Let x t (Iset n) e) = do
+    putStrLn $ "found simm " ++ show x ++ " = " ++ show n ++ "."
+    e' <- optimizeSeq ((x, n):env) e
+    if x `elem` freeVars e'
+    then return $ Let x t (Iset n) e'
+    else do
+      putStrLn $ "erased redundant Set to " ++ show x
+      return e'
   optimizeSeq env (Let x t (ISLL y (C i)) e)
     | y `member` env         = do
       putStrLn $ "erased redundant SLL on " ++ show x
@@ -52,18 +51,18 @@ module Immidiate (optimizeProgram) where
   optimizeInstr env (ISLL x (V y))
     | y `member` env                   =
       return $ ISLL x $ C $ y `find` env
-  optimizeInstr env (Ild x (V y))
+  optimizeInstr env (Ild x (V y) n)
     | y `member` env                   =
-      return $ Ild x $ C $ y `find` env
-  optimizeInstr env (Ist x y (V z))
+      return $ Ild x (C $ y `find` env) n
+  optimizeInstr env (Ist x y (V z) n)
     | z `member` env                   =
-      return $ Ist x y $ C $ z `find` env
-  optimizeInstr env (IldDF x (V y))
+      return $ Ist x y (C $ z `find` env) n
+  optimizeInstr env (IldDF x (V y) n)
     | y `member` env                   =
-      return $ IldDF x $ C $ y `find` env
-  optimizeInstr env (IstDF x y (V z))
+      return $ IldDF x (C $ y `find` env) n
+  optimizeInstr env (IstDF x y (V z) n)
     | z `member` env                   =
-      return $ IstDF x y $ C $ z `find` env
+      return $ IstDF x y (C $ z `find` env) n
   optimizeInstr env (IifEq x (V y) e1 e2)
     | y `member` env                   = do
       e1' <- optimizeSeq env e1

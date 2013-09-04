@@ -1,4 +1,4 @@
-module SPARC.Syntax.Virtual where
+module X86.Syntax.Virtual where
   import Types
 
   data Label = L String deriving Eq
@@ -13,7 +13,7 @@ module SPARC.Syntax.Virtual where
 
   instance Show IdOrImm where
     show (V s) = s
-    show (C n) = show n
+    show (C n) = '$' : show n
 
   -- Instruction sequence
   data Seq =
@@ -34,16 +34,16 @@ module SPARC.Syntax.Virtual where
     | ISmul String IdOrImm
     | ISdiv String IdOrImm
     | ISLL String IdOrImm
-    | Ild String  IdOrImm
-    | Ist String String IdOrImm
+    | Ild String  IdOrImm Integer
+    | Ist String String IdOrImm Integer
     | IfMovD String
     | IfNegD String
     | IfAddD String String
     | IfSubD String String
     | IfMulD String String
     | IfDivD String String
-    | IldDF String IdOrImm
-    | IstDF String String IdOrImm
+    | IldDF String IdOrImm Integer
+    | IstDF String String IdOrImm Integer
     | Icomment String
     -- virtual instructions
     | IifEq String IdOrImm Seq Seq

@@ -170,9 +170,9 @@ module KNormal.KNormalize (kNormalize) where
     kNormalizeAdd t e1 e2
   kNormalizeBPrim (BPsub, t)    e1 e2  =
     kNormalizeSub t e1 e2
-  kNormalizeBPrim (BPmult, t)   e1 e2  =
+  kNormalizeBPrim (BPmult, _)   e1 e2  =
     kNormalizeMult e1 e2
-  kNormalizeBPrim (BPdiv, t)    e1 e2  =
+  kNormalizeBPrim (BPdiv, _)    e1 e2  =
     kNormalizeDiv e1 e2
   kNormalizeBPrim (BPmod, t)    e1 e2  = do
     let Tfun [_, _] t' = t
