@@ -14,7 +14,7 @@ module Compiler where
   import LetFlatten
   import PatternMatching
   import RegAlloc
-  import SPARC.Syntax
+  import X86.Syntax
   import Syntax
   import TypedSyntax
   import TypeInference
