@@ -146,7 +146,6 @@ module X86.Syntax.Concrete where
       -- output of data section goes here
       ".text\n" ++
       show fs ++
-      "\n.global OCamlMin_START\nOCamlMin_START\n" ++
-      "OCamlMin_START:\n" ++
-      "OCamlMin_START:\n" ++
+      "\n.globl _OCamlMin_START\n" ++
+      "_OCamlMin_START:\n" ++
       show m
