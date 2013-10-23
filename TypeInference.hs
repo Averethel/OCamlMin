@@ -17,9 +17,9 @@ module TypeInference (
   import Control.Monad.Error
   import Control.Monad.State
 
-  typeOfExpression :: MonadState CompilerState m => Env -> Expr -> m (Either String TypedExpr)
+  typeOfExpression :: (MonadState CompilerState m, MonadError String m) => Env -> Expr -> m TypedExpr
   typeOfExpression env e = do
     errOrRes <- runErrorT $ typeOfExpr env emptyConstraints e
-    return $ case errOrRes of
-      Left s       -> Left s
-      Right (a, _) -> Right a
+    case errOrRes of
+      Left s       -> fail s
+      Right (a, _) -> return a

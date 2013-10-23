@@ -22,6 +22,7 @@ module Compiler where
   import Emit
 
   import CompilerState
+  import Control.Monad.Error
   import Control.Monad.State
 
   compiler :: (MonadIO m, MonadState CompilerState m) =>
@@ -41,12 +42,14 @@ module Compiler where
     e12    <- regAllocProgram e11
     emitProgram e12
 
-  compile :: (MonadIO m, MonadState CompilerState m) =>
-             Integer -> Expr -> m (Either String Prog)
+  compile :: (MonadIO m, MonadState CompilerState m, MonadError String m) =>
+             Integer -> Expr -> m Prog
   compile inlineTreshold expr = do
-    tp <- typeOfExpression emptyEnv expr
-    case tp of
-      Left er -> return $ Left er
-      Right t -> do
-        c <- compiler inlineTreshold t
-        return $ Right c
+    t <- typeOfExpression emptyEnv expr
+    compiler inlineTreshold t
+
+  output :: (MonadIO m, MonadState CompilerState m, MonadError String m) =>
+            Integer -> Expr -> FilePath -> m ()
+  output inlineTreshold expr path = do
+    p <- compile inlineTreshold expr
+    liftIO $ writeFile path (show p)
